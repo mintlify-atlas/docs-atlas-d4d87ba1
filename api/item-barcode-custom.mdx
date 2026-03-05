@@ -1,0 +1,100 @@
+---
+title: "Item Barcode Customizations"
+description: "Property setter modifications for the Item Barcode DocType"
+---
+
+## Overview
+
+EUW modifies the standard Frappe **Item Barcode** DocType to ensure the barcode field is always visible. This is a minimal customization that improves usability by preventing accidental hiding of critical barcode information.
+
+## Property Setters
+
+### Barcode Field Visibility
+
+The `barcode` field visibility is explicitly controlled to prevent it from being hidden.
+
+<ParamField path="barcode" type="Data">
+  The barcode value for the item. EUW ensures this field remains visible.
+  
+  **Modified properties:**
+  - `hidden`: Set to `0` (always visible)
+</ParamField>
+
+## Implementation Details
+
+This customization is implemented through a property setter in the fixtures:
+
+```json
+{
+  "doc_type": "Item Barcode",
+  "doctype_or_field": "DocField",
+  "field_name": "barcode",
+  "property": "hidden",
+  "property_type": "Check",
+  "value": "0"
+}
+```
+
+## Why This Matters
+
+In some ERPNext configurations or customizations, the barcode field might be inadvertently hidden through other property setters or custom scripts. This property setter ensures that:
+
+1. **Visibility is guaranteed** - The barcode field will always be visible in the Item Barcode form
+2. **Data entry consistency** - Users can always see and verify barcode values
+3. **Integration compatibility** - Barcode scanners and automation tools can rely on field visibility
+
+## Usage
+
+This customization works automatically once EUW is installed. No additional configuration is required.
+
+### Working with Item Barcodes
+
+```python
+import frappe
+
+# Add a barcode to an item
+item = frappe.get_doc("Item", "ITEM-001")
+
+# Add barcode entry - field will always be visible
+item.append("barcodes", {
+    "barcode": "1234567890123",
+    "barcode_type": "EAN"
+})
+
+item.save()
+frappe.db.commit()
+```
+
+### Bulk Barcode Operations
+
+```python
+import frappe
+
+# Query all item barcodes
+barcodes = frappe.get_all(
+    "Item Barcode",
+    fields=["parent", "barcode", "barcode_type"]
+)
+
+for bc in barcodes:
+    print(f"Item: {bc.parent}, Barcode: {bc.barcode}, Type: {bc.barcode_type}")
+```
+
+## Related Customizations
+
+This customization complements the Item customizations documented in the [Item Custom Fields](/api/item-custom) page, where additional barcode-related functionality may be configured through custom fields on the parent Item DocType.
+
+<Note>
+This is a defensive customization that ensures visibility even if other apps or customizations attempt to hide the barcode field. It's part of EUW's approach to maintaining data integrity.
+</Note>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Item Customizations" icon="box" href="/api/item-custom">
+    See all Item DocType customizations
+  </Card>
+  <Card title="Fixtures Guide" icon="box" href="/guides/fixtures">
+    Learn about the fixtures system
+  </Card>
+</CardGroup>

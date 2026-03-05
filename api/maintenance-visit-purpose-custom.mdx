@@ -1,0 +1,170 @@
+---
+title: "Maintenance Visit Purpose Customizations"
+description: "Custom fields and property setters for the Maintenance Visit Purpose DocType"
+---
+
+## Overview
+
+EUW extends the standard Frappe **Maintenance Visit Purpose** DocType to add maintenance team tracking and improve the workflow for maintenance visits. This customization is particularly useful for organizations managing multiple maintenance teams.
+
+## Custom Fields
+
+### Maintenance Team
+
+<ParamField path="custom_maintenance_team" type="Link" required>
+  Links to the Asset Maintenance Team DocType. Specifies which maintenance team is responsible for this visit purpose.
+  
+  **Properties:**
+  - Options: `Asset Maintenance Team`
+  - Required: Yes
+  - Visible in list view: Yes
+  - Insert after: `column_break_3`
+</ParamField>
+
+## Property Setters
+
+EUW modifies the following standard fields in the Maintenance Visit Purpose DocType:
+
+### Description Field
+
+The `description` field is made **required** to ensure proper documentation of maintenance purposes.
+
+**Modified properties:**
+- `reqd`: Set to `1` (required)
+
+### Service Person Field
+
+The `service_person` field visibility in list view is modified.
+
+**Modified properties:**
+- `in_list_view`: Set to `0` (hidden from list view)
+
+### Field Order
+
+The field order is customized to place the Maintenance Team field prominently:
+
+```json
+[
+  "item_code",
+  "item_name",
+  "column_break_3",
+  "custom_maintenance_team",
+  "service_person",
+  "serial_no",
+  "section_break_6",
+  "description",
+  "work_details",
+  "work_done",
+  "prevdoc_doctype",
+  "prevdoc_docname",
+  "maintenance_schedule_detail"
+]
+```
+
+## Usage Examples
+
+### Creating a Maintenance Visit Purpose with Team Assignment
+
+```python
+import frappe
+
+# Create a new Maintenance Visit Purpose with team assignment
+purpose = frappe.new_doc("Maintenance Visit Purpose")
+purpose.item_code = "TOOL-001"
+purpose.item_name = "Hydraulic Pump"
+purpose.custom_maintenance_team = "Team A - Hydraulics"
+purpose.description = "Annual maintenance inspection"
+purpose.work_details = "Check seals and replace filters"
+purpose.insert()
+
+frappe.db.commit()
+```
+
+### Querying by Maintenance Team
+
+```python
+import frappe
+
+# Get all purposes assigned to a specific team
+purposes = frappe.get_all(
+    "Maintenance Visit Purpose",
+    filters={"custom_maintenance_team": "Team A - Hydraulics"},
+    fields=["name", "item_code", "item_name", "description"]
+)
+
+for purpose in purposes:
+    print(f"{purpose.name}: {purpose.item_name} - {purpose.description}")
+```
+
+### Bulk Assignment
+
+```python
+import frappe
+
+# Assign multiple purposes to a team
+team = "Team B - Electrical"
+purposes = frappe.get_all(
+    "Maintenance Visit Purpose",
+    filters={"item_name": ["like", "%Electrical%"]},
+    fields=["name"]
+)
+
+for purpose in purposes:
+    doc = frappe.get_doc("Maintenance Visit Purpose", purpose.name)
+    doc.custom_maintenance_team = team
+    doc.save()
+
+frappe.db.commit()
+```
+
+## Integration Notes
+
+<Note>
+The custom_maintenance_team field integrates with the standard **Asset Maintenance Team** DocType. Ensure your teams are properly configured before assigning them to maintenance visit purposes.
+</Note>
+
+### Team-Based Workflows
+
+This customization enables team-based workflows where:
+1. Maintenance purposes are assigned to specific teams
+2. Team capacity can be tracked across purposes
+3. Reporting can be segmented by team performance
+4. Service persons are assigned within their team context
+
+### Required Setup
+
+Before using this customization, ensure:
+- Asset Maintenance Teams are created and configured
+- Teams have assigned service persons
+- Proper permissions are set for team management
+
+## Best Practices
+
+<Accordion title="Consistent Team Assignment">
+  Always assign a maintenance team when creating new purposes. The field is required to ensure accountability.
+</Accordion>
+
+<Accordion title="Description Requirements">
+  Provide detailed descriptions since this field is now required. Include:
+  - Type of maintenance (preventive, corrective, inspection)
+  - Key tasks to be performed
+  - Any special requirements or precautions
+</Accordion>
+
+<Accordion title="Team Capacity Planning">
+  Monitor team assignments to avoid overloading specific teams. Use reports to track:
+  - Number of purposes per team
+  - Average completion time by team
+  - Backlog of incomplete purposes per team
+</Accordion>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Fixtures Guide" icon="box" href="/guides/fixtures">
+    Learn about EUW's fixtures system
+  </Card>
+  <Card title="Custom Fields Guide" icon="input-text" href="/guides/custom-fields">
+    Understanding custom field implementation
+  </Card>
+</CardGroup>
