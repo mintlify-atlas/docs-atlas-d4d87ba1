@@ -1,0 +1,80 @@
+{
+  "projectType": "framework",
+  "projectName": "EUW",
+  "projectDescription": "A Frappe framework app for work order management",
+  "theme": "linden",
+  "primaryColor": "#2563eb",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/doctypes",
+              "concepts/customizations"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/custom-fields",
+              "guides/fixtures",
+              "guides/configuration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "DocTypes",
+            "pages": [
+              "api/applicability",
+              "api/dds",
+              "api/nrc"
+            ]
+          },
+          {
+            "group": "Customizations",
+            "pages": [
+              "api/asset-custom",
+              "api/customer-custom",
+              "api/issue-custom",
+              "api/item-custom"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Custom DocTypes for work order management",
+    "Extensive custom fields for Asset, Customer, Issue, and Item",
+    "Pre-configured fixtures and translations",
+    "Integration with Frappe/ERPNext ecosystem"
+  ],
+  "publicApiSurface": [
+    "Applicability DocType",
+    "DDS DocType",
+    "NRC DocType",
+    "Asset customizations",
+    "Customer customizations",
+    "Issue customizations",
+    "Item customizations",
+    "Maintenance Visit Purpose customizations"
+  ]
+}
