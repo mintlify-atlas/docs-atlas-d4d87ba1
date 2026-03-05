@@ -1,0 +1,358 @@
+---
+title: DDS
+description: API reference for the DDS (Deferred Defect Schedule) DocType in EUW Frappe framework
+---
+
+## Overview
+
+The **DDS** (Deferred Defect Schedule) DocType is used to track and manage deferred defects in aircraft maintenance operations. It provides comprehensive tracking of defect descriptions, dates, intervals, and deferral reasons with support for amendments and submissions.
+
+### Key Features
+
+- **Submittable**: Documents can be submitted for approval workflow
+- **Amendable**: Submitted documents can be amended
+- **Auto-numbering**: Uses naming series for automatic document naming
+- **Date Tracking**: Tracks both issue dates and due dates
+- **MEL/CDL Integration**: References Minimum Equipment List and Configuration Deviation List
+
+## DocType Configuration
+
+**Module**: EUW  
+**Engine**: InnoDB  
+**Naming Rule**: By "Naming Series" field  
+**Allow Rename**: Yes  
+**Submittable**: Yes  
+**Editable Grid**: Yes  
+**Default View**: List
+
+## Fields
+
+<ParamField path="naming_series" type="Select" required>
+  The naming series for auto-generating document names.
+  
+  - **Options**: `DDS-.YYYY.-####`
+  - **Label**: Series
+  - **Example**: DDS-2024-0001
+</ParamField>
+
+<ParamField path="description" type="Data" required>
+  A brief description of the deferred defect.
+  
+  - **Required**: Yes
+  - **Label**: Description
+</ParamField>
+
+<ParamField path="issue_date" type="Date" required>
+  The date when the defect was identified and issued.
+  
+  - **Required**: Yes
+  - **In List View**: Yes
+  - **Label**: Issue Date
+</ParamField>
+
+<ParamField path="due_date" type="Date" required>
+  The deadline by which the defect must be resolved.
+  
+  - **Required**: Yes
+  - **Label**: Due Date
+</ParamField>
+
+<ParamField path="interval" type="Data">
+  The maintenance interval or recurrence period for this defect.
+  
+  - **Label**: Interval
+</ParamField>
+
+<ParamField path="mel_cdl_reference" type="Data">
+  Reference to the Minimum Equipment List (MEL) or Configuration Deviation List (CDL).
+  
+  - **Label**: MEL/ CDL Reference
+</ParamField>
+
+<ParamField path="defferral_reason" type="Data">
+  The reason why this defect has been deferred.
+  
+  - **Label**: Defferral Reason
+</ParamField>
+
+<ParamField path="amended_from" type="Link">
+  Reference to the original DDS document if this is an amendment.
+  
+  - **Options**: DDS
+  - **Read Only**: Yes
+  - **No Copy**: Yes
+  - **Print Hide**: Yes
+  - **Label**: Amended From
+</ParamField>
+
+## Permissions
+
+The DDS DocType has the following permissions configured for the **System Manager** role:
+
+| Permission | Enabled |
+|------------|--------|
+| Create     | ✓      |
+| Read       | ✓      |
+| Write      | ✓      |
+| Delete     | ✓      |
+| Export     | ✓      |
+| Print      | ✓      |
+| Email      | ✓      |
+| Report     | ✓      |
+| Share      | ✓      |
+
+## Python API
+
+### Class Definition
+
+```python
+from frappe.model.document import Document
+
+class DDS(Document):
+    pass
+```
+
+The DDS class inherits from Frappe's base `Document` class and uses the default behavior without custom methods.
+
+### Creating a New DDS
+
+```python
+import frappe
+from datetime import datetime, timedelta
+
+# Create a new DDS document
+dds = frappe.get_doc({
+    "doctype": "DDS",
+    "naming_series": "DDS-.YYYY.-####",
+    "description": "Hydraulic fluid leak from left wing",
+    "issue_date": datetime.now().date(),
+    "due_date": (datetime.now() + timedelta(days=30)).date(),
+    "interval": "30 days",
+    "mel_cdl_reference": "MEL-29-001",
+    "defferral_reason": "Parts on order, aircraft serviceable per MEL"
+})
+dds.insert()
+frappe.db.commit()
+
+print(f"Created DDS: {dds.name}")
+```
+
+### Submitting a DDS
+
+```python
+import frappe
+
+# Load the document
+dds = frappe.get_doc("DDS", "DDS-2024-0001")
+
+# Submit the document
+dds.submit()
+frappe.db.commit()
+
+print(f"Submitted DDS: {dds.name}")
+```
+
+### Amending a Submitted DDS
+
+```python
+import frappe
+
+# Create an amended version of a submitted document
+original_dds = frappe.get_doc("DDS", "DDS-2024-0001")
+
+# Amend creates a copy
+amended_dds = frappe.copy_doc(original_dds)
+amended_dds.amended_from = original_dds.name
+amended_dds.docstatus = 0  # Draft status
+
+# Make changes
+amended_dds.due_date = "2024-12-31"
+amended_dds.defferral_reason = "Extended deferral approved by engineering"
+
+# Save and submit
+amended_dds.save()
+amended_dds.submit()
+frappe.db.commit()
+```
+
+### Retrieving a DDS
+
+```python
+import frappe
+
+# Get an existing DDS by name
+dds = frappe.get_doc("DDS", "DDS-2024-0001")
+
+# Access fields
+print(f"Description: {dds.description}")
+print(f"Issue Date: {dds.issue_date}")
+print(f"Due Date: {dds.due_date}")
+print(f"MEL Reference: {dds.mel_cdl_reference}")
+```
+
+### Querying DDS Documents
+
+```python
+import frappe
+from datetime import datetime
+
+# Get all submitted DDS documents
+submitted_dds = frappe.get_all(
+    "DDS",
+    filters={"docstatus": 1},
+    fields=["name", "description", "issue_date", "due_date"],
+    order_by="issue_date desc"
+)
+
+# Get overdue DDS documents
+overdue_dds = frappe.get_all(
+    "DDS",
+    filters={
+        "docstatus": 1,
+        "due_date": ["<", datetime.now().date()]
+    },
+    fields=["name", "description", "due_date"]
+)
+
+# Get DDS with specific MEL reference
+mel_dds = frappe.get_all(
+    "DDS",
+    filters={"mel_cdl_reference": ["like", "%MEL-29%"]},
+    fields=["name", "description", "mel_cdl_reference"]
+)
+```
+
+### Canceling a DDS
+
+```python
+import frappe
+
+# Cancel a submitted document
+dds = frappe.get_doc("DDS", "DDS-2024-0001")
+dds.cancel()
+frappe.db.commit()
+```
+
+## REST API
+
+### Get Document
+
+```bash
+GET /api/resource/DDS/{name}
+```
+
+**Example:**
+```bash
+curl -X GET \
+  https://your-site.com/api/resource/DDS/DDS-2024-0001 \
+  -H 'Authorization: token api_key:api_secret'
+```
+
+### Create Document
+
+```bash
+POST /api/resource/DDS
+```
+
+**Example:**
+```bash
+curl -X POST \
+  https://your-site.com/api/resource/DDS \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "naming_series": "DDS-.YYYY.-####",
+    "description": "Hydraulic fluid leak from left wing",
+    "issue_date": "2024-09-22",
+    "due_date": "2024-10-22",
+    "interval": "30 days",
+    "mel_cdl_reference": "MEL-29-001",
+    "defferral_reason": "Parts on order"
+  }'
+```
+
+### Submit Document
+
+```bash
+PUT /api/resource/DDS/{name}
+```
+
+**Example:**
+```bash
+curl -X PUT \
+  https://your-site.com/api/resource/DDS/DDS-2024-0001 \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "docstatus": 1
+  }'
+```
+
+### Cancel Document
+
+```bash
+PUT /api/resource/DDS/{name}
+```
+
+**Example:**
+```bash
+curl -X PUT \
+  https://your-site.com/api/resource/DDS/DDS-2024-0001 \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "docstatus": 2
+  }'
+```
+
+## Document Status
+
+Since DDS is a submittable DocType, documents have the following statuses:
+
+- **Draft** (`docstatus = 0`): Document is in draft state and can be edited
+- **Submitted** (`docstatus = 1`): Document is submitted and locked from editing
+- **Cancelled** (`docstatus = 2`): Document is cancelled
+
+## Workflow Example
+
+```python
+import frappe
+from datetime import datetime, timedelta
+
+# 1. Create a draft DDS
+dds = frappe.get_doc({
+    "doctype": "DDS",
+    "naming_series": "DDS-.YYYY.-####",
+    "description": "APU oil pressure low",
+    "issue_date": datetime.now().date(),
+    "due_date": (datetime.now() + timedelta(days=10)).date(),
+    "mel_cdl_reference": "MEL-49-002",
+    "defferral_reason": "Replacement APU scheduled for next maintenance"
+})
+dds.insert()
+print(f"Draft created: {dds.name}")
+
+# 2. Review and submit
+dds.submit()
+print(f"Submitted: {dds.name}")
+
+# 3. Need to extend due date - create amendment
+amended = frappe.copy_doc(dds)
+amended.amended_from = dds.name
+amended.docstatus = 0
+amended.due_date = (datetime.now() + timedelta(days=20)).date()
+amended.defferral_reason = "Extended per engineering approval"
+amended.save()
+amended.submit()
+print(f"Amendment submitted: {amended.name}")
+
+frappe.db.commit()
+```
+
+## Notes
+
+- DDS documents follow the naming series pattern: `DDS-YYYY-####` (e.g., DDS-2024-0001)
+- Once submitted, documents cannot be edited directly - they must be amended
+- The `amended_from` field creates a link to track the amendment history
+- Date validations should be added in custom code if needed (e.g., due_date > issue_date)
+- MEL/CDL references help track regulatory compliance for deferred maintenance items

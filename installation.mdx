@@ -1,0 +1,146 @@
+---
+title: Installation
+description: Install the EUW Frappe app for managing Work Orders
+---
+
+## Prerequisites
+
+Before installing the EUW app, ensure you have:
+
+- A working Frappe bench setup (v13 or higher recommended)
+- Frappe Framework installed via `bench init`
+- Access to your bench directory
+- System Manager role in your Frappe site
+
+<Note>
+  EUW is a Frappe app designed for Work Order management with custom DocTypes including DDS (Deferred Defect Status), NRC (Non-Routine Cards), and Applicability tracking.
+</Note>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Get the app from repository">
+    Navigate to your bench directory and install the EUW app using `bench get-app`:
+
+    ```bash
+    cd ~/frappe-bench
+    bench get-app https://github.com/your-org/euw.git
+    ```
+
+    This will clone the repository into the `apps` directory and install dependencies.
+  </Step>
+
+  <Step title="Install the app on your site">
+    Install the EUW app on your Frappe site:
+
+    ```bash
+    bench --site your-site.local install-app euw
+    ```
+
+    Replace `your-site.local` with your actual site name.
+  </Step>
+
+  <Step title="Run database migrations">
+    Apply database migrations to create the necessary tables and structures:
+
+    ```bash
+    bench --site your-site.local migrate
+    ```
+
+    This will create the following DocTypes:
+    - **DDS** - Deferred Defect Status tracking
+    - **NRC** - Non-Routine Card management
+    - **Applicability** - Applicability records
+  </Step>
+
+  <Step title="Clear cache and restart">
+    Clear the cache and restart bench to ensure all changes are applied:
+
+    ```bash
+    bench --site your-site.local clear-cache
+    bench restart
+    ```
+  </Step>
+</Steps>
+
+## Configuration
+
+### Fixtures
+
+The EUW app includes fixtures for seamless setup. During installation, the following components are automatically imported:
+
+- Client Scripts
+- Custom Fields
+- Property Setters
+- Print Formats
+- Translations
+
+<Note>
+  Fixtures are defined in `hooks.py` and will be automatically loaded when you install the app:
+  
+  ```python
+  fixtures=['Client Script', 'Custom Field', 'Property Setter', 'Print Format', 'Translation']
+  ```
+</Note>
+
+### App Information
+
+The EUW app is configured with the following details:
+
+| Property | Value |
+|----------|-------|
+| **App Name** | euw |
+| **Version** | 0.0.1 |
+| **License** | MIT |
+| **Module** | EUW |
+
+## Verification
+
+After installation, verify that the app is working correctly:
+
+<Steps>
+  <Step title="Check installed apps">
+    ```bash
+    bench --site your-site.local list-apps
+    ```
+    
+    You should see `euw` in the list of installed apps.
+  </Step>
+
+  <Step title="Access DocTypes">
+    Log in to your Frappe desk and navigate to:
+    
+    - **EUW Module** → You should see DDS, NRC, and Applicability DocTypes
+    - Try creating a new record to verify functionality
+  </Step>
+
+  <Step title="Check permissions">
+    Ensure System Manager role has full access to all EUW DocTypes by default.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Warning>
+  If you encounter any issues during installation:
+  
+  1. Check that Frappe Framework is properly installed
+  2. Ensure you have the required permissions
+  3. Review the bench logs: `bench --site your-site.local console`
+  4. Try running `bench update --reset` if migrations fail
+</Warning>
+
+### Common Issues
+
+**App not showing in desk**
+- Clear browser cache and hard refresh (Ctrl+Shift+R)
+- Run `bench clear-cache` and `bench restart`
+
+**Migration errors**
+- Check database connectivity
+- Ensure you have write permissions to the database
+- Review error logs in `logs/` directory
+
+## Next Steps
+
+Now that you have successfully installed the EUW app, proceed to the [Quickstart Guide](/quickstart) to learn how to use it.

@@ -1,0 +1,524 @@
+---
+title: Configuration
+description: Configure the EUW Frappe app through hooks and configuration files
+---
+
+The EUW app's behavior is controlled through configuration files that define hooks, fixtures, and desktop settings. Understanding these configurations is essential for customizing and extending the app.
+
+## Configuration Files Overview
+
+EUW uses three primary configuration files:
+
+```
+euw/
+├── hooks.py          # Main app configuration and hooks
+├── config/
+│   └── desktop.py    # Desktop module configuration
+└── fixtures/         # UI customization data
+```
+
+## hooks.py - Main Configuration
+
+The `hooks.py` file is the heart of the app's configuration.
+
+### App Metadata
+
+```python /home/daytona/workspace/source/euw/hooks.py:1-8
+app_name = "euw"
+app_title = "EUW"
+app_publisher = "Aseel Gh"
+app_description = "EUW app for Workorder"
+app_email = "aseel.gharbia@gmail.com"
+app_license = "MIT"
+```
+
+**Key Metadata Fields:**
+- `app_name`: Internal identifier (used in installation)
+- `app_title`: Display name in the UI
+- `app_publisher`: Developer/organization name
+- `app_description`: Brief description of functionality
+- `app_license`: Software license type
+
+### Fixtures Configuration
+
+```python /home/daytona/workspace/source/euw/hooks.py:220
+fixtures=['Client Script', 'Custom Field', 'Property Setter', 'Print Format', 'Translation']
+```
+
+This defines which customizations are exported/imported as fixtures. See the [Fixtures Guide](/guides/fixtures) for details.
+
+### Asset Includes
+
+Include custom JavaScript and CSS files:
+
+```python /home/daytona/workspace/source/euw/hooks.py:10-19
+# Include js, css files in header of desk.html
+# app_include_css = "/assets/euw/css/euw.css"
+# app_include_js = "/assets/euw/js/euw.js"
+
+# Include js, css files in header of web template
+# web_include_css = "/assets/euw/css/euw.css"
+# web_include_js = "/assets/euw/js/euw.js"
+```
+
+<Note>
+Uncomment these lines and create the corresponding files to add custom frontend code.
+</Note>
+
+### DocType JavaScript
+
+Add custom JavaScript to specific DocTypes:
+
+```python /home/daytona/workspace/source/euw/hooks.py:31-35
+# Include js in doctype views
+# doctype_js = {"doctype" : "public/js/doctype.js"}
+# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+# doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
+# doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
+```
+
+**Example:**
+```python
+doctype_js = {
+    "Item": "public/js/item.js",
+    "Sales Order": "public/js/sales_order.js"
+}
+```
+
+### Home Page Configuration
+
+```python /home/daytona/workspace/source/euw/hooks.py:37-46
+# Home Pages
+# application home page (will override Website Settings)
+# home_page = "login"
+
+# website user home page (by Role)
+# role_home_page = {
+#   "Role": "home_page"
+# }
+```
+
+**Example:**
+```python
+role_home_page = {
+    "Sales User": "sales-home",
+    "Purchase User": "purchase-home"
+}
+```
+
+### Document Events
+
+Hook into document lifecycle events:
+
+```python /home/daytona/workspace/source/euw/hooks.py:117-127
+# doc_events = {
+#   "*": {
+#       "on_update": "method",
+#       "on_cancel": "method",
+#       "on_trash": "method"
+#   }
+# }
+```
+
+<Accordion title="Document Event Example">
+```python
+doc_events = {
+    "Sales Invoice": {
+        "on_submit": "euw.events.sales_invoice.on_submit",
+        "validate": "euw.events.sales_invoice.validate"
+    },
+    "*": {
+        "before_insert": "euw.events.common.set_defaults"
+    }
+}
+```
+
+Then create the event handlers:
+
+```python
+# euw/events/sales_invoice.py
+def on_submit(doc, method):
+    # Logic when sales invoice is submitted
+    pass
+
+def validate(doc, method):
+    # Validation logic
+    pass
+```
+</Accordion>
+
+### Scheduled Tasks
+
+Configure periodic background jobs:
+
+```python /home/daytona/workspace/source/euw/hooks.py:129-148
+# scheduler_events = {
+#   "all": [
+#       "euw.tasks.all"
+#   ],
+#   "daily": [
+#       "euw.tasks.daily"
+#   ],
+#   "hourly": [
+#       "euw.tasks.hourly"
+#   ],
+#   "weekly": [
+#       "euw.tasks.weekly"
+#   ],
+#   "monthly": [
+#       "euw.tasks.monthly"
+#   ],
+# }
+```
+
+<Accordion title="Scheduler Example">
+```python
+scheduler_events = {
+    "daily": [
+        "euw.tasks.daily_report",
+        "euw.tasks.cleanup_old_records"
+    ],
+    "hourly": [
+        "euw.tasks.sync_inventory"
+    ],
+    "cron": {
+        "0 8 * * *": [  # Run at 8 AM daily
+            "euw.tasks.morning_report"
+        ]
+    }
+}
+```
+
+Implement the tasks:
+
+```python
+# euw/tasks.py
+def daily_report():
+    # Generate and send daily report
+    pass
+
+def cleanup_old_records():
+    # Delete old temporary records
+    pass
+```
+</Accordion>
+
+### Override Whitelisted Methods
+
+Replace standard API methods with custom implementations:
+
+```python /home/daytona/workspace/source/euw/hooks.py:155-160
+# override_whitelisted_methods = {
+#   "frappe.desk.doctype.event.event.get_events": "euw.event.get_events"
+# }
+```
+
+**Example:**
+```python
+override_whitelisted_methods = {
+    "erpnext.stock.get_item_details.get_item_details": "euw.custom.get_item_details"
+}
+```
+
+### Permission Hooks
+
+Custom permission logic:
+
+```python /home/daytona/workspace/source/euw/hooks.py:97-107
+# permission_query_conditions = {
+#   "Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+# }
+#
+# has_permission = {
+#   "Event": "frappe.desk.doctype.event.event.has_permission",
+# }
+```
+
+### Installation Hooks
+
+Execute code during app installation:
+
+```python /home/daytona/workspace/source/euw/hooks.py:63-73
+# before_install = "euw.install.before_install"
+# after_install = "euw.install.after_install"
+
+# before_uninstall = "euw.uninstall.before_uninstall"
+# after_uninstall = "euw.uninstall.after_uninstall"
+```
+
+<Accordion title="Installation Hook Example">
+```python
+# hooks.py
+after_install = "euw.install.after_install"
+
+# euw/install.py
+import frappe
+
+def after_install():
+    """Run after app installation"""
+    create_default_records()
+    setup_roles_and_permissions()
+    frappe.db.commit()
+
+def create_default_records():
+    # Create default data
+    pass
+
+def setup_roles_and_permissions():
+    # Configure initial permissions
+    pass
+```
+</Accordion>
+
+## config/desktop.py - Desktop Module
+
+Controls how the app appears in the Desk sidebar:
+
+```python /home/daytona/workspace/source/euw/config/desktop.py:1-11
+from frappe import _
+
+def get_data():
+    return [
+        {
+            "module_name": "EUW",
+            "type": "module",
+            "label": _("EUW")
+        }
+    ]
+```
+
+### Adding Icons and Colors
+
+Customize the desktop module appearance:
+
+```python
+def get_data():
+    return [
+        {
+            "module_name": "EUW",
+            "type": "module",
+            "label": _("EUW"),
+            "color": "#3498db",
+            "icon": "octicon octicon-package",
+            "description": "Manage work orders and maintenance"
+        }
+    ]
+```
+
+### Multiple Modules
+
+An app can provide multiple modules:
+
+```python
+def get_data():
+    return [
+        {
+            "module_name": "Work Orders",
+            "type": "module",
+            "label": _("Work Orders"),
+            "icon": "octicon octicon-tools"
+        },
+        {
+            "module_name": "Maintenance",
+            "type": "module",
+            "label": _("Maintenance"),
+            "icon": "octicon octicon-gear"
+        }
+    ]
+```
+
+## Environment Variables
+
+Configure app behavior through environment variables:
+
+### In site_config.json
+
+```json
+{
+  "euw_settings": {
+    "enable_feature_x": true,
+    "api_endpoint": "https://api.example.com"
+  }
+}
+```
+
+Access in code:
+
+```python
+import frappe
+
+settings = frappe.conf.get("euw_settings", {})
+if settings.get("enable_feature_x"):
+    # Feature logic
+    pass
+```
+
+## Custom Settings DocType
+
+For user-configurable settings, create a Settings DocType:
+
+```python
+# Create EUW Settings DocType with fields:
+# - enable_auto_approval (Check)
+# - default_warehouse (Link to Warehouse)
+# - notification_email (Data)
+
+# Access settings:
+import frappe
+
+def get_euw_settings():
+    return frappe.get_single("EUW Settings")
+
+settings = get_euw_settings()
+if settings.enable_auto_approval:
+    # Auto-approve logic
+    pass
+```
+
+## Best Practices
+
+<Note>
+**Organize by Feature**: Group related hooks and configurations together with comments.
+</Note>
+
+<Note>
+**Use Hooks Over Core Modifications**: Always use hooks to customize behavior rather than modifying core Frappe/ERPNext files.
+</Note>
+
+<Note>
+**Document Custom Hooks**: Add docstrings and comments explaining the purpose of each hook.
+</Note>
+
+<Note>
+**Test Hook Functions**: Write unit tests for custom hook functions to ensure they work correctly.
+</Note>
+
+## Common Configuration Patterns
+
+### Auto-set Field Values
+
+```python
+# hooks.py
+doc_events = {
+    "Item": {
+        "before_save": "euw.utils.item.set_defaults"
+    }
+}
+
+# euw/utils/item.py
+def set_defaults(doc, method):
+    if not doc.custom_applicability:
+        doc.custom_applicability = "General"
+```
+
+### Validate Documents
+
+```python
+# hooks.py
+doc_events = {
+    "Sales Order": {
+        "validate": "euw.validations.sales_order.validate"
+    }
+}
+
+# euw/validations/sales_order.py
+import frappe
+
+def validate(doc, method):
+    if doc.custom_field_x and not doc.custom_field_y:
+        frappe.throw("Custom Field Y is required when Custom Field X is set")
+```
+
+### Send Notifications
+
+```python
+# hooks.py
+doc_events = {
+    "Work Order": {
+        "on_submit": "euw.notifications.work_order.notify_team"
+    }
+}
+
+# euw/notifications/work_order.py
+import frappe
+
+def notify_team(doc, method):
+    frappe.sendmail(
+        recipients=["team@example.com"],
+        subject=f"Work Order {doc.name} Submitted",
+        message=f"Work Order {doc.name} has been submitted and is ready for processing."
+    )
+```
+
+## Debugging Configuration
+
+### Check Active Hooks
+
+```python
+import frappe
+
+# In bench console
+app_hooks = frappe.get_hooks()
+print(app_hooks.get("fixtures"))
+print(app_hooks.get("doc_events"))
+```
+
+### Verify Fixture Loading
+
+```bash
+# Check if fixtures are configured
+bench --site [site-name] console
+>>> frappe.get_hooks("fixtures", app_name="euw")
+```
+
+### Test Document Events
+
+```python
+# In bench console
+import frappe
+
+# Create test document
+doc = frappe.get_doc({
+    "doctype": "Item",
+    "item_code": "TEST-ITEM",
+    "item_name": "Test Item"
+})
+
+# Triggers all hooks (validate, before_save, etc.)
+doc.insert()
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Fixtures Guide" icon="box" href="/guides/fixtures">
+    Learn about the fixtures system
+  </Card>
+  <Card title="Custom Fields" icon="input-text" href="/guides/custom-fields">
+    Working with custom fields
+  </Card>
+  <Card title="Frappe Hooks Documentation" icon="book" href="https://frappeframework.com/docs/user/en/python-api/hooks">
+    Official Frappe hooks reference
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<Accordion title="Hooks not executing">
+1. Clear cache: `bench clear-cache`
+2. Restart bench: `bench restart`
+3. Check for Python syntax errors in hook files
+4. Verify function paths are correct
+</Accordion>
+
+<Accordion title="Module not showing in Desk">
+1. Check `config/desktop.py` syntax
+2. Rebuild desk: `bench build`
+3. Clear cache and reload
+</Accordion>
+
+<Accordion title="Import errors in hooks">
+1. Ensure all referenced modules exist
+2. Check Python path and imports
+3. Verify function names are correct
+</Accordion>

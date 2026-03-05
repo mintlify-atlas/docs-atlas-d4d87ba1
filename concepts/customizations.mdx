@@ -1,0 +1,632 @@
+---
+title: Customizations
+description: How EUW extends standard ERPNext DocTypes with custom fields and fixtures
+---
+
+## Overview
+
+EUW extends multiple standard ERPNext DocTypes without modifying core files. This is accomplished through Frappe's Custom Field system and the fixtures mechanism, which allows for version-controlled, reproducible customizations.
+
+## Customization Strategy
+
+EUW follows Frappe best practices for extending standard functionality:
+
+<Steps>
+  <Step title="Custom Fields">
+    Add new fields to existing DocTypes using Custom Field definitions
+  </Step>
+  <Step title="Property Setters">
+    Modify properties of existing fields (visibility, requirements, etc.)
+  </Step>
+  <Step title="Fixtures Export">
+    Store all customizations as JSON fixtures in version control
+  </Step>
+  <Step title="Automatic Import">
+    Frappe automatically applies fixtures during installation and updates
+  </Step>
+</Steps>
+
+## Fixtures System
+
+### Configuration
+
+EUW declares its fixtures in hooks.py:
+
+```python hooks.py
+fixtures = [
+    'Client Script',
+    'Custom Field',
+    'Property Setter',
+    'Print Format',
+    'Translation'
+]
+```
+
+### Fixture Types
+
+<AccordionGroup>
+  <Accordion title="Custom Field" icon="plus">
+    Adds new fields to existing DocTypes without modifying the original schema.
+    
+    **Location**: `fixtures/custom_field.json`
+    
+    **Purpose**: Extend standard DocTypes with domain-specific fields
+  </Accordion>
+  
+  <Accordion title="Property Setter" icon="wrench">
+    Modifies properties of existing fields (hidden, required, default values, etc.).
+    
+    **Location**: `fixtures/property_setter.json`
+    
+    **Purpose**: Customize behavior of standard fields
+  </Accordion>
+  
+  <Accordion title="Client Script" icon="code">
+    JavaScript code that runs in the browser to customize form behavior.
+    
+    **Location**: `fixtures/client_script.json`
+    
+    **Purpose**: Add client-side validation, auto-fill logic, and UI enhancements
+  </Accordion>
+  
+  <Accordion title="Print Format" icon="print">
+    Custom print layouts for documents.
+    
+    **Location**: `fixtures/print_format.json`
+    
+    **Purpose**: Branded, formatted document printing
+  </Accordion>
+  
+  <Accordion title="Translation" icon="language">
+    Custom translations for labels and messages.
+    
+    **Location**: `fixtures/translation.json`
+    
+    **Purpose**: Internationalization support
+  </Accordion>
+</AccordionGroup>
+
+## Extended DocTypes
+
+EUW adds custom fields to multiple standard ERPNext DocTypes:
+
+### Item
+
+**Purpose**: Link items to applicability categories
+
+```json euw/custom/item.json
+{
+  "custom_fields": [
+    {
+      "dt": "Item",
+      "fieldname": "custom_applicability",
+      "fieldtype": "Link",
+      "options": "Applicability",
+      "label": "Applicability",
+      "insert_after": "stock_uom"
+    }
+  ]
+}
+```
+
+**Use case**: Tag items with their applicability (e.g., which aircraft models they're compatible with)
+
+### Asset
+
+**Purpose**: Track asset branch assignments
+
+```json euw/custom/asset.json
+{
+  "custom_fields": [
+    {
+      "dt": "Asset",
+      "fieldname": "branch",
+      "fieldtype": "Link",
+      "options": "Branch",
+      "label": "Branch",
+      "insert_after": "dimension_col_break"
+    }
+  ]
+}
+```
+
+**Use case**: Assign assets to specific branches for location tracking
+
+### Company
+
+**Purpose**: Add HR and payroll configuration
+
+<CodeGroup>
+```json Structure
+{
+  "custom_fields": [
+    {
+      "fieldname": "hr_and_payroll_tab",
+      "fieldtype": "Tab Break",
+      "label": "HR & Payroll"
+    },
+    {
+      "fieldname": "default_expense_claim_payable_account",
+      "fieldtype": "Link",
+      "options": "Account",
+      "label": "Default Expense Claim Payable Account"
+    },
+    {
+      "fieldname": "default_employee_advance_account",
+      "fieldtype": "Link",
+      "options": "Account",
+      "label": "Default Employee Advance Account"
+    },
+    {
+      "fieldname": "default_payroll_payable_account",
+      "fieldtype": "Link",
+      "options": "Account",
+      "label": "Default Payroll Payable Account"
+    }
+  ]
+}
+```
+
+```python Usage
+import frappe
+
+def get_payroll_accounts(company):
+    company_doc = frappe.get_doc("Company", company)
+    return {
+        "expense_claim": company_doc.default_expense_claim_payable_account,
+        "advance": company_doc.default_employee_advance_account,
+        "payroll": company_doc.default_payroll_payable_account
+    }
+```
+</CodeGroup>
+
+**Use case**: Centralize HR/payroll account configuration at company level
+
+### Employee
+
+**Purpose**: Extensive HR functionality additions
+
+<Tabs>
+  <Tab title="Employment Details">
+    ```json
+    {
+      "fieldname": "employment_type",
+      "fieldtype": "Link",
+      "options": "Employment Type",
+      "label": "Employment Type"
+    },
+    {
+      "fieldname": "grade",
+      "fieldtype": "Link",
+      "options": "Employee Grade",
+      "label": "Grade"
+    },
+    {
+      "fieldname": "job_applicant",
+      "fieldtype": "Link",
+      "options": "Job Applicant",
+      "label": "Job Applicant"
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Shift & Attendance">
+    ```json
+    {
+      "fieldname": "default_shift",
+      "fieldtype": "Link",
+      "options": "Shift Type",
+      "label": "Default Shift"
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Approvers">
+    ```json
+    {
+      "fieldname": "expense_approver",
+      "fieldtype": "Link",
+      "options": "User",
+      "label": "Expense Approver"
+    },
+    {
+      "fieldname": "leave_approver",
+      "fieldtype": "Link",
+      "options": "User",
+      "label": "Leave Approver"
+    },
+    {
+      "fieldname": "shift_request_approver",
+      "fieldtype": "Link",
+      "options": "User",
+      "label": "Shift Request Approver"
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Payroll">
+    ```json
+    {
+      "fieldname": "payroll_cost_center",
+      "fieldtype": "Link",
+      "options": "Cost Center",
+      "label": "Payroll Cost Center",
+      "fetch_from": "department.payroll_cost_center",
+      "fetch_if_empty": 1
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Health Insurance">
+    ```json
+    {
+      "fieldname": "health_insurance_provider",
+      "fieldtype": "Link",
+      "options": "Employee Health Insurance",
+      "label": "Health Insurance Provider"
+    },
+    {
+      "fieldname": "health_insurance_no",
+      "fieldtype": "Data",
+      "label": "Health Insurance No",
+      "depends_on": "eval:doc.health_insurance_provider"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+**Use case**: Comprehensive employee management with approvals, payroll, and benefits tracking
+
+### Department
+
+**Purpose**: Department-level approver configuration
+
+```json
+{
+  "custom_fields": [
+    {
+      "fieldname": "payroll_cost_center",
+      "fieldtype": "Link",
+      "options": "Cost Center",
+      "label": "Payroll Cost Center"
+    },
+    {
+      "fieldname": "leave_block_list",
+      "fieldtype": "Link",
+      "options": "Leave Block List",
+      "label": "Leave Block List"
+    },
+    {
+      "fieldname": "shift_request_approver",
+      "fieldtype": "Table",
+      "options": "Department Approver",
+      "label": "Shift Request Approver"
+    },
+    {
+      "fieldname": "leave_approvers",
+      "fieldtype": "Table",
+      "options": "Department Approver",
+      "label": "Leave Approver"
+    },
+    {
+      "fieldname": "expense_approvers",
+      "fieldtype": "Table",
+      "options": "Department Approver",
+      "label": "Expense Approver"
+    }
+  ]
+}
+```
+
+<Note>
+The table fields allow multiple approvers per department with hierarchical approval workflows.
+</Note>
+
+### Designation
+
+**Purpose**: Link job roles to appraisal templates and required skills
+
+```json
+{
+  "custom_fields": [
+    {
+      "fieldname": "appraisal_template",
+      "fieldtype": "Link",
+      "options": "Appraisal Template",
+      "label": "Appraisal Template"
+    },
+    {
+      "fieldname": "skills",
+      "fieldtype": "Table",
+      "options": "Designation Skill",
+      "label": "Skills"
+    }
+  ]
+}
+```
+
+### Project and Task
+
+**Purpose**: Track expense claims against projects and tasks
+
+```json
+{
+  "custom_fields": [
+    {
+      "dt": "Project",
+      "fieldname": "total_expense_claim",
+      "fieldtype": "Currency",
+      "label": "Total Expense Claim (via Expense Claims)",
+      "read_only": 1
+    },
+    {
+      "dt": "Task",
+      "fieldname": "total_expense_claim",
+      "fieldtype": "Currency",
+      "label": "Total Expense Claim (via Expense Claim)",
+      "read_only": 1,
+      "options": "Company:company:default_currency"
+    }
+  ]
+}
+```
+
+### Timesheet
+
+**Purpose**: Link timesheets to payroll
+
+```json
+{
+  "custom_fields": [
+    {
+      "fieldname": "salary_slip",
+      "fieldtype": "Link",
+      "options": "Salary Slip",
+      "label": "Salary Slip",
+      "read_only": 1,
+      "no_copy": 1
+    }
+  ]
+}
+```
+
+### Terms and Conditions
+
+**Purpose**: Flag terms for HR use
+
+```json
+{
+  "custom_fields": [
+    {
+      "fieldname": "hr",
+      "fieldtype": "Check",
+      "label": "HR",
+      "default": "1"
+    }
+  ]
+}
+```
+
+## Property Setters
+
+Property Setters modify existing field behavior without adding new fields.
+
+### Example: Item DocType Modifications
+
+```json fixtures/property_setter.json
+[
+  {
+    "doc_type": "Item",
+    "field_name": "naming_series",
+    "property": "hidden",
+    "value": "1"
+  },
+  {
+    "doc_type": "Item",
+    "field_name": "naming_series",
+    "property": "reqd",
+    "value": "0"
+  },
+  {
+    "doc_type": "Item",
+    "field_name": "item_code",
+    "property": "hidden",
+    "value": "0"
+  },
+  {
+    "doc_type": "Item",
+    "field_name": "item_code",
+    "property": "reqd",
+    "value": "1"
+  }
+]
+```
+
+<Info>
+This configuration:
+- Hides the naming series field
+- Makes naming series optional
+- Shows the item code field
+- Makes item code required
+
+Effectively switching from series-based to manual item code entry.
+</Info>
+
+## Managing Customizations
+
+### Exporting Fixtures
+
+To export customizations to fixtures:
+
+```bash
+bench --site [sitename] export-fixtures
+```
+
+This updates all JSON files in the `fixtures/` directory.
+
+### Importing Fixtures
+
+Fixtures are automatically imported during:
+
+```bash
+# Initial installation
+bench --site [sitename] install-app euw
+
+# Manual import
+bench --site [sitename] import-fixtures euw
+```
+
+### Viewing Custom Fields in UI
+
+<Steps>
+  <Step title="Navigate to DocType">
+    Setup > Customize > [DocType Name] (e.g., "Item")
+  </Step>
+  <Step title="View Custom Fields">
+    Custom fields appear with a "Custom" badge
+  </Step>
+  <Step title="Edit if Needed">
+    Changes made in UI can be exported back to fixtures
+  </Step>
+</Steps>
+
+<Warning>
+Always export customizations after making changes in the UI to keep fixtures in sync.
+</Warning>
+
+## Custom Field Naming Convention
+
+EUW follows two naming patterns:
+
+1. **System-generated fields**: Prefixed with `custom_`
+   ```json
+   {"fieldname": "custom_applicability"}
+   ```
+
+2. **Explicit names**: For HR module fields (no prefix)
+   ```json
+   {"fieldname": "employment_type"}
+   ```
+
+<Tip>
+Using the `custom_` prefix helps distinguish between standard and custom fields, especially when troubleshooting.
+</Tip>
+
+## Field Insertion Strategy
+
+Custom fields use the `insert_after` property to control placement:
+
+```json
+{
+  "fieldname": "custom_applicability",
+  "insert_after": "stock_uom"
+}
+```
+
+This ensures:
+- Logical field grouping
+- Consistent form layout
+- Compatibility with future ERPNext updates
+
+## Conditional Display
+
+Some fields use `depends_on` for conditional visibility:
+
+```json
+{
+  "fieldname": "health_insurance_no",
+  "depends_on": "eval:doc.health_insurance_provider"
+}
+```
+
+**Result**: The insurance number field only appears when a provider is selected.
+
+## Fetch From Logic
+
+Automatic field population from linked documents:
+
+```json
+{
+  "fieldname": "payroll_cost_center",
+  "fetch_from": "department.payroll_cost_center",
+  "fetch_if_empty": 1
+}
+```
+
+**Behavior**:
+1. When department is selected on Employee
+2. If payroll_cost_center is empty
+3. Automatically fetch from department.payroll_cost_center
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Version Control" icon="code-branch">
+    Always commit fixture changes to git for traceability
+  </Card>
+  <Card title="Documentation" icon="book">
+    Document the purpose of each custom field in comments or docs
+  </Card>
+  <Card title="Testing" icon="flask">
+    Test customizations in development before production deployment
+  </Card>
+  <Card title="Permissions" icon="shield">
+    Review permission implications when adding fields with sensitive data
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Custom fields not appearing">
+    **Solutions**:
+    ```bash
+    # Re-import fixtures
+    bench --site [sitename] import-fixtures euw
+    
+    # Clear cache
+    bench --site [sitename] clear-cache
+    
+    # Reload DocType
+    bench --site [sitename] reload-doc euw [doctype-name]
+    ```
+  </Accordion>
+  
+  <Accordion title="Property setter not applying">
+    **Solutions**:
+    - Check property name spelling
+    - Verify field name matches exactly
+    - Property setters apply after custom fields
+    - Try deleting and re-importing
+  </Accordion>
+  
+  <Accordion title="Fixture import errors">
+    **Solutions**:
+    - Validate JSON syntax
+    - Check for duplicate fieldnames
+    - Ensure referenced DocTypes exist
+    - Review error logs: `bench --site [sitename] console`
+  </Accordion>
+</AccordionGroup>
+
+## Migration Considerations
+
+When upgrading ERPNext:
+
+<Warning>
+1. **Backup first**: Always backup before major upgrades
+2. **Test in staging**: Verify customizations work with new version
+3. **Check conflicts**: Review ERPNext changelog for field name conflicts
+4. **Update fixtures**: Re-export fixtures after successful upgrade
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/concepts/architecture">
+    Understand EUW's overall structure
+  </Card>
+  <Card title="DocTypes" icon="database" href="/concepts/doctypes">
+    Learn about custom DocTypes
+  </Card>
+</CardGroup>

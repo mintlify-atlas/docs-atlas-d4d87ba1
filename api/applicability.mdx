@@ -1,0 +1,239 @@
+---
+title: Applicability
+description: API reference for the Applicability DocType in EUW Frappe framework
+---
+
+## Overview
+
+The **Applicability** DocType is a simple reference document used to define applicability criteria or classifications within the EUW module. It allows users to create and manage reusable applicability titles that can be referenced throughout the system.
+
+### Key Features
+
+- **Quick Entry**: Enabled for fast data entry
+- **Auto-naming**: Automatically named using the title field
+- **Unique Titles**: Each applicability must have a unique title
+- **Renameable**: Documents can be renamed after creation
+
+## DocType Configuration
+
+**Module**: EUW  
+**Engine**: InnoDB  
+**Naming Rule**: By fieldname (title)  
+**Allow Rename**: Yes  
+**Quick Entry**: Yes
+
+## Fields
+
+<ParamField path="title" type="Data" required>
+  The unique title/name for this applicability. This field is used for auto-naming the document.
+  
+  - **Required**: Yes
+  - **Unique**: Yes
+  - **In List View**: Yes
+  - **Label**: Title
+</ParamField>
+
+## Permissions
+
+The Applicability DocType has the following permissions configured for the **System Manager** role:
+
+| Permission | Enabled |
+|------------|--------|
+| Create     | ✓      |
+| Read       | ✓      |
+| Write      | ✓      |
+| Delete     | ✓      |
+| Export     | ✓      |
+| Print      | ✓      |
+| Email      | ✓      |
+| Report     | ✓      |
+| Share      | ✓      |
+
+## Python API
+
+### Class Definition
+
+```python
+from frappe.model.document import Document
+
+class Applicability(Document):
+    pass
+```
+
+The Applicability class inherits from Frappe's base `Document` class and uses the default behavior without custom methods.
+
+### Creating a New Applicability
+
+```python
+import frappe
+
+# Create a new Applicability document
+applicability = frappe.get_doc({
+    "doctype": "Applicability",
+    "title": "Aircraft Type A320"
+})
+applicability.insert()
+frappe.db.commit()
+```
+
+### Retrieving an Applicability
+
+```python
+import frappe
+
+# Get an existing Applicability by name
+applicability = frappe.get_doc("Applicability", "Aircraft Type A320")
+
+# Get the title
+print(applicability.title)
+```
+
+### Querying Applicabilities
+
+```python
+import frappe
+
+# Get all applicabilities
+applicabilities = frappe.get_all("Applicability", fields=["name", "title"])
+
+# Search for specific applicabilities
+matching = frappe.get_all(
+    "Applicability",
+    filters={"title": ["like", "%Aircraft%"]},
+    fields=["name", "title"]
+)
+```
+
+### Updating an Applicability
+
+```python
+import frappe
+
+# Load the document
+applicability = frappe.get_doc("Applicability", "Aircraft Type A320")
+
+# Update the title
+applicability.title = "Aircraft Type A320-200"
+applicability.save()
+frappe.db.commit()
+```
+
+### Deleting an Applicability
+
+```python
+import frappe
+
+# Delete an applicability document
+frappe.delete_doc("Applicability", "Aircraft Type A320")
+frappe.db.commit()
+```
+
+## REST API
+
+### Get Document
+
+```bash
+GET /api/resource/Applicability/{name}
+```
+
+**Example:**
+```bash
+curl -X GET \
+  https://your-site.com/api/resource/Applicability/Aircraft%20Type%20A320 \
+  -H 'Authorization: token api_key:api_secret'
+```
+
+### Create Document
+
+```bash
+POST /api/resource/Applicability
+```
+
+**Example:**
+```bash
+curl -X POST \
+  https://your-site.com/api/resource/Applicability \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Aircraft Type B737"
+  }'
+```
+
+### Update Document
+
+```bash
+PUT /api/resource/Applicability/{name}
+```
+
+**Example:**
+```bash
+curl -X PUT \
+  https://your-site.com/api/resource/Applicability/Aircraft%20Type%20A320 \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Aircraft Type A320-200"
+  }'
+```
+
+### Delete Document
+
+```bash
+DELETE /api/resource/Applicability/{name}
+```
+
+**Example:**
+```bash
+curl -X DELETE \
+  https://your-site.com/api/resource/Applicability/Aircraft%20Type%20A320 \
+  -H 'Authorization: token api_key:api_secret'
+```
+
+## Usage Examples
+
+### Quick Entry Form
+
+Since quick entry is enabled, users can quickly create applicability records through a simplified form interface.
+
+### Linking to Other DocTypes
+
+Applicability can be linked from other DocTypes using a Link field:
+
+```json
+{
+  "fieldname": "applicability",
+  "fieldtype": "Link",
+  "options": "Applicability",
+  "label": "Applicability"
+}
+```
+
+### Bulk Import
+
+```python
+import frappe
+
+applicabilities = [
+    "Aircraft Type A320",
+    "Aircraft Type A330",
+    "Aircraft Type B737",
+    "Aircraft Type B777"
+]
+
+for title in applicabilities:
+    doc = frappe.get_doc({
+        "doctype": "Applicability",
+        "title": title
+    })
+    doc.insert()
+
+frappe.db.commit()
+```
+
+## Notes
+
+- The document name is automatically set to match the title field value
+- Title must be unique across all Applicability documents
+- The DocType has web search indexing enabled for better searchability
+- Sort order is descending by modified date

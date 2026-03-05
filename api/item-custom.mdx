@@ -1,0 +1,340 @@
+---
+title: 'Item Customizations'
+description: 'Custom fields and extensions for the Item DocType'
+---
+
+## Overview
+
+The Item DocType has been extensively customized to support tool management, spare parts tracking, and aircraft component categorization for EUW's aviation maintenance operations.
+
+**Extends**: `Item` (ERPNext standard DocType)
+
+## Tool Management Fields
+
+### Is Tool
+
+<ParamField path="custom_is_tool" type="Check" default="">
+  Indicates whether this item is a tool. When checked, additional tool-specific fields become available.
+  
+  - **Bold**: Yes
+  - **Allow in Quick Entry**: Yes
+  - **Insert After**: `is_stock_item`
+  - **Field Index**: 12
+</ParamField>
+
+### Tools Type
+
+<ParamField path="custom_tools_type" type="Select">
+  Categorizes the type of tool when `custom_is_tool` is checked.
+  
+  - **Options**: `STD`, `Special`, `Equipment`
+  - **Depends On**: `eval:doc.custom_is_tool`
+  - **Mandatory When**: `eval:doc.custom_is_tool`
+  - **Insert After**: `asset_category`
+  - **Field Index**: 21
+</ParamField>
+
+### Applicability
+
+<ParamField path="custom_applicability" type="Link">
+  Links to the Applicability DocType to specify where this item/tool can be used.
+  
+  - **Options**: `Applicability`
+  - **Insert After**: `stock_uom`
+  - **Field Index**: 7
+</ParamField>
+
+## Spare Parts Information
+
+<Info>
+All spare parts fields are contained within the "Spares info" tab.
+</Info>
+
+### Spares Info Tab
+
+<ParamField path="custom_spares_info" type="Tab Break">
+  A dedicated tab for organizing spare parts information.
+  
+  - **Label**: "Spares info"
+  - **Insert After**: `total_projected_qty`
+  - **Field Index**: 111
+</ParamField>
+
+### Manufacture
+
+<ParamField path="custom_manufacture" type="Data">
+  Manufacturer name or identifier for the spare part.
+  
+  - **Translatable**: Yes
+  - **Insert After**: `custom_spares_info`
+  - **Field Index**: 112
+</ParamField>
+
+### Entity
+
+<ParamField path="custom_entity" type="Data">
+  Entity or organization associated with the spare part.
+  
+  - **Translatable**: Yes
+  - **Insert After**: `custom_manufacture`
+  - **Field Index**: 113
+</ParamField>
+
+### Condition
+
+<ParamField path="custom_condition" type="Select">
+  Current condition status of the spare part.
+  
+  - **Options**: `N/A`, `NE`, `OHC`, `RE`, `Repaired`, `SVC`
+  - **Translatable**: Yes
+  - **Insert After**: `custom_column_break_oubbh`
+  - **Field Index**: 115
+</ParamField>
+
+#### Condition Code Reference
+
+| Code | Meaning |
+|------|----------|
+| N/A | Not Applicable |
+| NE | New |
+| OHC | Overhauled |
+| RE | Repaired/Reconditioned |
+| Repaired | Repaired |
+| SVC | Serviceable |
+
+### Spare
+
+<ParamField path="custom_spare" type="Select">
+  Classification of the spare part type.
+  
+  - **Options**: `ROT`, `Consumable`
+  - **Translatable**: Yes
+  - **Insert After**: `custom_condition`
+  - **Field Index**: 116
+</ParamField>
+
+#### Spare Type Reference
+
+| Type | Description |
+|------|-------------|
+| ROT | Rotable - Repairable parts that can be returned to service |
+| Consumable | Single-use items that are consumed during maintenance |
+
+## Field Organization
+
+The custom fields are organized as follows:
+
+### Main Tab
+- `custom_applicability` (Field 7)
+- `custom_is_tool` (Field 12)
+- `custom_tools_type` (Field 21)
+
+### Spares Info Tab (Field 111)
+- `custom_manufacture` (Field 112)
+- `custom_entity` (Field 113)
+- Column Break
+- `custom_condition` (Field 115)
+- `custom_spare` (Field 116)
+
+## Complete Field Reference
+
+| Field Name | Type | Label | Required | Translatable | Index |
+|------------|------|-------|----------|--------------|-------|
+| `custom_applicability` | Link | Applicability | No | No | 7 |
+| `custom_is_tool` | Check | Is Tool | No | No | 12 |
+| `custom_tools_type` | Select | Tools Type | Conditional* | No | 21 |
+| `custom_manufacture` | Data | Manufacture | No | Yes | 112 |
+| `custom_entity` | Data | Entity | No | Yes | 113 |
+| `custom_condition` | Select | condition | No | Yes | 115 |
+| `custom_spare` | Select | Spare | No | Yes | 116 |
+
+*Required when `custom_is_tool` is checked
+
+## Usage Examples
+
+### Creating a Tool Item
+
+```python
+item = frappe.get_doc({
+    'doctype': 'Item',
+    'item_code': 'TOOL-TRQ-001',
+    'item_name': 'Torque Wrench 0-100 Nm',
+    'item_group': 'Tools',
+    'stock_uom': 'Nos',
+    'is_stock_item': 1,
+    'custom_is_tool': 1,
+    'custom_tools_type': 'Special',
+    'custom_applicability': 'APP-001',
+    'is_fixed_asset': 1,
+    'asset_category': 'Tools and Equipment'
+})
+item.insert()
+```
+
+### Creating a Spare Part Item
+
+```python
+item = frappe.get_doc({
+    'doctype': 'Item',
+    'item_code': 'SPARE-BRG-001',
+    'item_name': 'Main Landing Gear Bearing',
+    'item_group': 'Spare Parts',
+    'stock_uom': 'Nos',
+    'custom_manufacture': 'AeroParts Inc.',
+    'custom_entity': 'Boeing',
+    'custom_condition': 'NE',
+    'custom_spare': 'ROT'
+})
+item.insert()
+```
+
+### Filtering Tools by Type
+
+```python
+special_tools = frappe.get_all('Item',
+    filters={
+        'custom_is_tool': 1,
+        'custom_tools_type': 'Special'
+    },
+    fields=['item_code', 'item_name', 'custom_applicability']
+)
+```
+
+### Finding Rotable Spares
+
+```python
+rotable_spares = frappe.get_all('Item',
+    filters={
+        'custom_spare': 'ROT',
+        'custom_condition': ['in', ['NE', 'OHC', 'SVC']]
+    },
+    fields=['item_code', 'item_name', 'custom_manufacture', 'custom_condition']
+)
+```
+
+### Getting Items by Condition
+
+```python
+serviceable_items = frappe.get_all('Item',
+    filters={
+        'custom_condition': 'SVC'
+    },
+    fields=['item_code', 'item_name', 'custom_spare', 'custom_manufacture']
+)
+```
+
+### Items Needing Overhaul
+
+```python
+items_for_overhaul = frappe.get_all('Item',
+    filters={
+        'custom_spare': 'ROT',
+        'custom_condition': ['not in', ['NE', 'OHC', 'SVC']]
+    },
+    fields=['item_code', 'item_name', 'custom_condition']
+)
+```
+
+## Tool and Asset Integration
+
+<Note>
+When `custom_is_tool` is checked, the item can be tracked as an Asset. The `custom_tools_type` field value is automatically fetched to the Asset when created.
+</Note>
+
+```python
+# Create item as tool
+tool_item = frappe.get_doc({
+    'doctype': 'Item',
+    'item_code': 'TOOL-001',
+    'custom_is_tool': 1,
+    'custom_tools_type': 'Equipment',
+    'is_fixed_asset': 1,
+    'asset_category': 'Tools'
+})
+tool_item.insert()
+
+# Create corresponding asset
+asset = frappe.get_doc({
+    'doctype': 'Asset',
+    'item_code': 'TOOL-001',
+    'asset_name': 'Hydraulic Test Stand',
+    # custom_is_tool and custom_tools_type are auto-fetched
+})
+asset.insert()
+```
+
+## Spare Parts Lifecycle Management
+
+### Tracking Spare Part Conditions
+
+```python
+def update_spare_condition(item_code, new_condition):
+    """Update spare part condition after maintenance activity"""
+    item = frappe.get_doc('Item', item_code)
+    
+    # Validate condition transition
+    valid_transitions = {
+        'NE': ['SVC', 'RE'],
+        'SVC': ['OHC', 'RE'],
+        'RE': ['SVC'],
+        'OHC': ['SVC', 'RE']
+    }
+    
+    if new_condition in valid_transitions.get(item.custom_condition, []):
+        item.custom_condition = new_condition
+        item.add_comment('Comment', f'Condition updated to {new_condition}')
+        item.save()
+        return True
+    else:
+        frappe.throw(f"Invalid condition transition from {item.custom_condition} to {new_condition}")
+```
+
+## Applicability Filtering
+
+```python
+@frappe.whitelist()
+def get_applicable_tools(applicability):
+    """Get all tools applicable for a specific purpose"""
+    return frappe.get_all('Item',
+        filters={
+            'custom_is_tool': 1,
+            'custom_applicability': applicability
+        },
+        fields=['item_code', 'item_name', 'custom_tools_type']
+    )
+```
+
+## Configuration Notes
+
+### Property Setters
+
+- **Naming Series**: Hidden (naming_series field)
+- **Naming Pattern**: `STO-ITEM-.YYYY.-`
+- **Item Code**: Visible and required
+- **Barcodes**: Visible
+
+### Custom Permissions
+
+Custom permissions have been configured for:
+- Item Manager (full access)
+- Stock User/Manager
+- Purchase User
+- Sales User
+- Accounts User
+- Maintenance User
+- Manufacturing User
+- MR role (custom role with import/export)
+
+## Best Practices
+
+1. **Tool Classification**: Always set both `custom_is_tool` and `custom_tools_type` for tool items
+2. **Spare Part Tracking**: Use the `custom_condition` field to track spare part lifecycle
+3. **Rotable Management**: Mark repairable parts as "ROT" to enable overhaul tracking
+4. **Manufacturer Data**: Always populate `custom_manufacture` for spare parts for traceability
+5. **Applicability**: Link tools to applicability records for proper filtering
+
+## Validation
+
+<Warning>
+When `custom_is_tool` is checked, `custom_tools_type` becomes mandatory and must be one of: STD, Special, or Equipment.
+</Warning>

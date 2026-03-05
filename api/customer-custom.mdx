@@ -1,0 +1,173 @@
+---
+title: 'Customer Customizations'
+description: 'Custom fields and extensions for the Customer DocType'
+---
+
+## Overview
+
+The Customer DocType has been extended with a custom status field to better manage customer lifecycle states within EUW's operations.
+
+**Extends**: `Customer` (ERPNext standard DocType)
+
+## Custom Fields
+
+### Status
+
+<ParamField path="custom_status" type="Select" required>
+  Indicates the current status of the customer in the system.
+  
+  - **Options**: `Active`, `Inactive`
+  - **Required**: Yes
+  - **Insert After**: `column_break0`
+  - **Field Index**: 8
+</ParamField>
+
+## Field Details
+
+| Property | Value |
+|----------|-------|
+| Field Name | `custom_status` |
+| Field Type | Select |
+| Label | Status |
+| Required | Yes |
+| Options | Active, Inactive |
+| In List View | No |
+| In Standard Filter | No |
+| Translatable | No |
+
+## Purpose
+
+The `custom_status` field allows EUW to:
+
+- Track whether a customer is actively doing business
+- Filter out inactive customers from various reports and lists
+- Maintain customer records without deleting them
+- Control customer visibility in transactions
+
+## Usage Examples
+
+### Creating a Customer with Status
+
+```python
+customer = frappe.get_doc({
+    'doctype': 'Customer',
+    'customer_name': 'Acme Corporation',
+    'customer_type': 'Company',
+    'customer_group': 'Commercial',
+    'territory': 'United States',
+    'custom_status': 'Active'
+})
+customer.insert()
+```
+
+### Filtering Active Customers
+
+```python
+active_customers = frappe.get_all('Customer',
+    filters={
+        'custom_status': 'Active'
+    },
+    fields=['name', 'customer_name', 'customer_group', 'territory']
+)
+```
+
+### Deactivating a Customer
+
+```python
+customer = frappe.get_doc('Customer', 'CUST-2024-00123')
+customer.custom_status = 'Inactive'
+customer.save()
+```
+
+### Getting All Inactive Customers
+
+```python
+inactive_customers = frappe.get_all('Customer',
+    filters={
+        'custom_status': 'Inactive'
+    },
+    fields=['name', 'customer_name', 'modified']
+)
+```
+
+## Validation
+
+<Warning>
+The `custom_status` field is required. A customer cannot be saved without selecting a status value.
+</Warning>
+
+## Permissions
+
+The custom status field inherits permissions from the Customer DocType. The following roles can modify the status:
+
+- Sales User (write access)
+- Sales Master Manager (write access)
+
+## Integration Notes
+
+### Reports
+
+When building custom reports for customers, consider filtering by status:
+
+```python
+if filters.get('include_inactive'):
+    # Include all customers
+    pass
+else:
+    # Filter for active customers only
+    conditions.append("`tabCustomer`.`custom_status` = 'Active'")
+```
+
+### API Endpoints
+
+When exposing customer data via API, the status field can be used to:
+
+- Filter customer lists
+- Determine if transactions can be created
+- Show/hide customers in dropdowns
+
+```python
+@frappe.whitelist()
+def get_active_customers():
+    return frappe.get_all('Customer',
+        filters={'custom_status': 'Active'},
+        fields=['name', 'customer_name']
+    )
+```
+
+## Configuration
+
+### Property Setters
+
+The Customer DocType has the following customizations:
+
+- **Naming Series**: Hidden and not required
+- **Naming Pattern**: `CUST-.YYYY.-`
+
+### Custom Permissions
+
+Custom permissions have been configured for the following roles:
+
+- Sales Master Manager
+- Sales User
+- Sales Manager
+- Stock Manager
+- Stock User
+- Accounts User
+- Accounts Manager
+- Employee Self Service (select only)
+
+## Best Practices
+
+1. **Always Set Status**: When creating customers programmatically, always set the status explicitly
+2. **Default to Active**: New customers should typically be set to "Active" by default
+3. **Document Changes**: When changing status to Inactive, consider adding a comment explaining why
+4. **Reactivation Process**: Establish a clear process for reactivating inactive customers
+
+```python
+# Example of documenting status change
+customer = frappe.get_doc('Customer', customer_name)
+customer.custom_status = 'Inactive'
+customer.add_comment('Comment', 'Customer marked inactive due to no activity for 2 years')
+customer.save()
+```

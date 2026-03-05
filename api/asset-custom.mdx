@@ -1,0 +1,222 @@
+---
+title: 'Asset Customizations'
+description: 'Custom fields and extensions for the Asset DocType'
+---
+
+## Overview
+
+The Asset DocType has been extended with custom fields to support tool management, calibration tracking, and additional metadata specific to EUW's operations.
+
+**Extends**: `Asset` (ERPNext standard DocType)
+
+## Tool Management Fields
+
+### Branch
+
+<ParamField path="branch" type="Link">
+  Links the asset to a specific branch location.
+  
+  - **Options**: `Branch`
+  - **Insert After**: `dimension_col_break`
+  - **Translatable**: Yes
+</ParamField>
+
+### Is Tool
+
+<ParamField path="custom_is_tool" type="Check" default="0">
+  Indicates whether this asset is a tool. When checked, additional tool-specific fields become visible.
+  
+  - **Fetched From**: `item_code.custom_is_tool`
+  - **Read Only**: Yes
+  - **Insert After**: `asset_owner_company`
+</ParamField>
+
+### Tools Type
+
+<ParamField path="custom_tools_type" type="Select">
+  Categorizes the type of tool when `custom_is_tool` is checked.
+  
+  - **Options**: `STD`, `Special`, `Equipment`
+  - **Fetched From**: `item_code.custom_tools_type`
+  - **Depends On**: `eval:doc.custom_is_tool`
+  - **Mandatory When**: `eval:doc.custom_is_tool`
+  - **Read Only**: Yes
+  - **Insert After**: `custom_is_tool`
+</ParamField>
+
+### Applicability
+
+<ParamField path="custom_applicability" type="Link">
+  Specifies the applicability of the asset/tool.
+  
+  - **Options**: `Applicability`
+  - **Fetched From**: `item_code.custom_applicability`
+  - **Depends On**: `item_code`
+  - **Insert After**: `item_name`
+</ParamField>
+
+## Tool Identification Fields
+
+<Info>
+These fields are visible when `custom_is_tool` is checked and `custom_tools_type` is set.
+</Info>
+
+### TILC
+
+<ParamField path="custom_tilc" type="Data">
+  Tool Identification and Lifecycle Code.
+  
+  - **Depends On**: `eval:doc.custom_tools_type=='Special'`
+  - **Insert After**: `custom_section_break_sftf2`
+</ParamField>
+
+### PIN
+
+<ParamField path="custom_pin" type="Data">
+  Personal Identification Number for the tool.
+  
+  - **Depends On**: `eval:(doc.custom_tools_type == 'Special' || doc.custom_tools_type == 'Equipment')`
+  - **Insert After**: `custom_tilc`
+</ParamField>
+
+### S/N (Serial Number)
+
+<ParamField path="custom_sn" type="Data">
+  Serial number of the tool or equipment.
+  
+  - **Depends On**: `eval:(doc.custom_tools_type == 'Special' || doc.custom_tools_type == 'Equipment')`
+  - **Insert After**: `custom_pin`
+</ParamField>
+
+### Manufacture
+
+<ParamField path="custom_manufacture" type="Data">
+  Manufacturer name or identifier.
+  
+  - **Insert After**: `custom_sn`
+</ParamField>
+
+## Tool Specifications
+
+### Range
+
+<ParamField path="custom_range" type="Data">
+  Operating or measurement range for special tools and equipment.
+  
+  - **Depends On**: `eval:(doc.custom_tools_type == 'Special' || doc.custom_tools_type == 'Equipment')`
+  - **Insert After**: `custom_column_break_g662o`
+</ParamField>
+
+## Calibration Fields
+
+<Info>
+Calibration fields are only visible for tools with type "Special".
+</Info>
+
+### Expiry Date
+
+<ParamField path="custom_expiry_date" type="Date">
+  Expiration date for calibration or certification.
+  
+  - **Depends On**: `eval:doc.custom_tools_type=='Special'`
+  - **Insert After**: `custom_range`
+</ParamField>
+
+### Entity Data Now
+
+<ParamField path="custom_entity_data_now" type="Data">
+  Current entity data for the tool.
+  
+  - **Depends On**: `eval:doc.custom_tools_type=='Special'`
+  - **Insert After**: `custom_expiry_date`
+</ParamField>
+
+### Calib Intity
+
+<ParamField path="custom_calib_intity" type="Data">
+  Calibration entity or authority.
+  
+  - **Depends On**: `eval:doc.custom_tools_type=='Special'`
+  - **Insert After**: `custom_entity_data_now`
+</ParamField>
+
+### Calib Date
+
+<ParamField path="custom_calib_date" type="Date">
+  Date of last calibration.
+  
+  - **Depends On**: `eval:doc.custom_tools_type=='Special'`
+  - **Insert After**: `custom_calib_intity`
+</ParamField>
+
+## Additional Fields
+
+### Notes
+
+<ParamField path="custom_notes" type="Text">
+  Free-form text field for additional notes about the asset.
+  
+  - **Depends On**: `eval:(doc.custom_is_tool && doc.custom_tools_type)`
+  - **Insert After**: `custom_section_break_7x7hz`
+</ParamField>
+
+### Asset Description
+
+<ParamField path="custom_asset_description" type="Text Editor">
+  Rich text description of the asset with formatting capabilities.
+  
+  - **Insert After**: `custom_description_asset_section`
+</ParamField>
+
+## Field Organization
+
+The custom fields are organized into several sections:
+
+1. **Tool Information Section** (`custom_section_break_sftf2`)
+   - Visible when: `eval:(doc.custom_is_tool && doc.custom_tools_type)`
+   - Contains: TILC, PIN, S/N, Manufacture, Range, Expiry Date, Entity Data, Calibration fields
+
+2. **Notes Section** (`custom_section_break_7x7hz`)
+   - Visible when: `eval:(doc.custom_is_tool && doc.custom_tools_type)`
+   - Contains: Notes field
+
+3. **Description Section** (`custom_description_asset_section`)
+   - Contains: Asset Description with text editor
+
+## Usage Examples
+
+### Creating a Special Tool Asset
+
+```python
+asset = frappe.get_doc({
+    'doctype': 'Asset',
+    'item_code': 'TOOL-001',
+    'asset_name': 'Precision Torque Wrench',
+    'custom_is_tool': 1,
+    'custom_tools_type': 'Special',
+    'custom_tilc': 'TILC-2024-001',
+    'custom_pin': 'PIN-12345',
+    'custom_sn': 'SN-TWR-2024-001',
+    'custom_manufacture': 'ToolMaker Inc.',
+    'custom_range': '0-100 Nm',
+    'custom_calib_date': '2024-09-01',
+    'custom_expiry_date': '2025-09-01',
+    'custom_calib_intity': 'National Metrology Institute'
+})
+asset.insert()
+```
+
+### Filtering Tools Due for Calibration
+
+```python
+from datetime import datetime, timedelta
+
+tools_due = frappe.get_all('Asset',
+    filters={
+        'custom_is_tool': 1,
+        'custom_tools_type': 'Special',
+        'custom_expiry_date': ['<=', datetime.now().date() + timedelta(days=30)]
+    },
+    fields=['name', 'asset_name', 'custom_expiry_date', 'custom_calib_date']
+)
+```

@@ -1,80 +1,258 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart Guide
+description: Get started with the EUW Frappe app for Work Order management
 ---
 
-## Get started in three steps
+## Overview
 
-Get your documentation site running locally and make your first customization.
+The EUW app provides custom DocTypes for managing work orders, deferred defects, and non-routine maintenance cards. This guide will help you create your first records and understand the basic workflow.
 
-### Step 1: Set up your local environment
+## Available DocTypes
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+The EUW module includes three main DocTypes:
 
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+<CardGroup cols={3}>
+  <Card title="DDS" icon="clock">
+    Deferred Defect Status - Track deferred maintenance items with issue dates, due dates, and intervals
+  </Card>
+  <Card title="NRC" icon="wrench">
+    Non-Routine Cards - Manage non-routine maintenance work requests with corrective actions
+  </Card>
+  <Card title="Applicability" icon="check">
+    Applicability - Simple reference records for applicability tracking
+  </Card>
 </CardGroup>
 
+## Creating Your First DDS Record
+
+<Steps>
+  <Step title="Navigate to DDS DocType">
+    From your Frappe desk:
+    
+    1. Go to the **EUW Module**
+    2. Click on **DDS** DocType
+    3. Click the **New** button
+  </Step>
+
+  <Step title="Fill in required fields">
+    The DDS DocType has the following structure:
+
+    - **Series**: Auto-generated as `DDS-.YYYY.-####` (e.g., DDS-2024-0001)
+    - **Description**: Brief description of the deferred defect (required)
+    - **Issue Date**: When the defect was identified (required)
+    - **Due Date**: When the defect must be addressed (required)
+    - **Interval**: Maintenance interval
+    - **MEL/CDL Reference**: Reference to MEL or CDL
+    - **Deferral Reason**: Reason for deferring the work
+
+    Example:
+    ```plaintext
+    Description: Hydraulic system leak on landing gear
+    Issue Date: 2024-09-21
+    Due Date: 2024-10-15
+    Interval: 500 FH
+    MEL/CDL Reference: MEL 32-42-01
+    Deferral Reason: Parts on order
+    ```
+  </Step>
+
+  <Step title="Submit the document">
+    DDS is a submittable DocType, which means:
+    
+    1. **Save** the draft first
+    2. Review the details
+    3. Click **Submit** to finalize the record
+    
+    <Note>
+      Once submitted, the DDS record cannot be modified without amending it. This ensures audit trail compliance.
+    </Note>
+  </Step>
+</Steps>
+
+## Creating an NRC (Non-Routine Card)
+
+<Steps>
+  <Step title="Access NRC DocType">
+    Navigate to **EUW Module** → **NRC** and click **New**.
+  </Step>
+
+  <Step title="Enter work request details">
+    Fill in the NRC fields:
+
+    - **Series**: Auto-generated as `NRC-.YYYY.-####`
+    - **Work Request Description**: Describe the non-routine work (required)
+    - **ATA CH**: ATA chapter reference
+    - **Open Date**: Date the work request was opened (required)
+    - **Corrective Action**: Action taken to resolve the issue
+
+    Example:
+    ```plaintext
+    Work Request Description: Replace damaged panel on fuselage section
+    ATA CH: 53-21
+    Open Date: 2024-09-21
+    Corrective Action: Installed new panel per SRM 53-21-05
+    ```
+  </Step>
+
+  <Step title="Save and submit">
+    Like DDS, NRC is also submittable:
+    
+    1. **Save** as draft
+    2. Complete all required fields
+    3. **Submit** to finalize
+  </Step>
+</Steps>
+
+## Working with Applicability Records
+
+Applicability is a simpler DocType for tracking applicability references:
+
+```python
+# Creating an Applicability record programmatically
+import frappe
+
+def create_applicability():
+    doc = frappe.new_doc("Applicability")
+    doc.title = "Boeing 737-800 Series"
+    doc.save()
+    return doc
+```
+
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Applicability records use the title field as the unique identifier and support quick entry for faster data input.
 </Note>
+
+## Programmatic Access
+
+You can interact with EUW DocTypes using Python:
+
+<CodeGroup>
+```python Creating a DDS Record
+import frappe
+from frappe.utils import nowdate, add_days
+
+# Create a new DDS document
+dds = frappe.new_doc("DDS")
+dds.description = "Engine vibration monitoring required"
+dds.issue_date = nowdate()
+dds.due_date = add_days(nowdate(), 30)
+dds.interval = "100 FH"
+dds.mel_cdl_reference = "MEL 71-00-01"
+dds.defferral_reason = "Monitoring within limits"
+
+# Save and submit
+dds.insert()
+dds.submit()
+
+frappe.db.commit()
+print(f"Created DDS: {dds.name}")
+```
+
+```python Creating an NRC Record
+import frappe
+from frappe.utils import nowdate
+
+# Create a new NRC document
+nrc = frappe.new_doc("NRC")
+nrc.description = "Inspect tire for wear"
+nrc.ata_ch = "32-41"
+nrc.open_date = nowdate()
+nrc.corrective_action = "Tire replaced per AMM 32-41-22"
+
+# Save and submit
+nrc.insert()
+nrc.submit()
+
+frappe.db.commit()
+print(f"Created NRC: {nrc.name}")
+```
+
+```python Querying Records
+import frappe
+from frappe.utils import nowdate
+
+# Get all open DDS records
+dds_list = frappe.get_all(
+    "DDS",
+    filters={
+        "docstatus": 1,  # Submitted
+        "due_date": [">=", nowdate()]
+    },
+    fields=["name", "description", "issue_date", "due_date"]
+)
+
+for dds in dds_list:
+    print(f"{dds.name}: {dds.description} - Due: {dds.due_date}")
+```
+</CodeGroup>
+
+## Understanding Document Workflow
+
+### Submittable Documents
+
+Both DDS and NRC are submittable DocTypes with three states:
+
+| State | docstatus | Description |
+|-------|-----------|-------------|
+| Draft | 0 | Document is being edited |
+| Submitted | 1 | Document is finalized and locked |
+| Cancelled | 2 | Document is cancelled |
+
+<Warning>
+  Submitted documents cannot be modified directly. Use the **Amend** feature to create a new version while maintaining the audit trail.
+</Warning>
+
+### Amending Documents
+
+To modify a submitted document:
+
+1. Open the submitted document
+2. Click **Amend**
+3. Make your changes
+4. Submit the amended version
+
+The `amended_from` field will reference the original document.
+
+## Permissions
+
+By default, all EUW DocTypes grant full permissions to the **System Manager** role:
+
+- Create, Read, Update, Delete
+- Submit and Cancel
+- Email, Export, Print
+- Share and Report
+
+<Note>
+  You can customize permissions via **Role Permissions Manager** in Frappe to grant access to other roles as needed.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Customize Fields" icon="sliders">
+    Add custom fields to DDS, NRC, or Applicability DocTypes using Customize Form
+  </Card>
+  <Card title="Create Reports" icon="chart-bar">
+    Build custom reports to analyze your work order data
+  </Card>
+  <Card title="Set Up Workflows" icon="diagram-project">
+    Configure approval workflows for DDS and NRC submissions
+  </Card>
+  <Card title="API Integration" icon="code">
+    Use Frappe's REST API to integrate with external systems
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- [Frappe Framework Documentation](https://frappeframework.com/docs)
+- [DocType Development Guide](https://frappeframework.com/docs/user/en/basics/doctypes)
+- [Frappe API Reference](https://frappeframework.com/docs/user/en/api)
+
+## Support
+
+For questions or issues:
+
+- Review the source code at `euw/euw/doctype/`
+- Check `hooks.py` for configured hooks and fixtures
+- Contact: aseel.gharbia@gmail.com

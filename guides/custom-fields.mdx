@@ -1,0 +1,330 @@
+---
+title: Working with Custom Fields
+description: Learn how to use and manage custom fields in the EUW Frappe framework app
+---
+
+The EUW app extends standard Frappe DocTypes with custom fields to support specific business requirements. Custom fields are defined in the fixtures system and automatically applied during installation.
+
+## Overview
+
+Custom fields in EUW are used to:
+- Add business-specific data to standard DocTypes
+- Enhance functionality of existing forms
+- Support custom workflows and integrations
+- Maintain data consistency across the application
+
+## Custom Field Structure
+
+Each custom field is defined with the following key properties:
+
+```json
+{
+  "dt": "DocType name",
+  "fieldname": "unique_field_name",
+  "fieldtype": "Field type",
+  "label": "User-visible label",
+  "insert_after": "existing_field",
+  "options": "Link target or options"
+}
+```
+
+## Common Field Types
+
+EUW uses various field types for different purposes:
+
+<Accordion title="Link Fields">
+Link fields connect to other DocTypes. For example, the `branch` field on Asset:
+
+```json /home/daytona/workspace/source/euw/fixtures/custom_field.json:14-41
+{
+  "dt": "Asset",
+  "fieldname": "branch",
+  "fieldtype": "Link",
+  "label": "Branch",
+  "options": "Branch",
+  "insert_after": "dimension_col_break"
+}
+```
+</Accordion>
+
+<Accordion title="Tab Breaks">
+Tab Breaks organize fields into separate tabs. Example from Company:
+
+```json /home/daytona/workspace/source/euw/fixtures/custom_field.json:73-88
+{
+  "dt": "Company",
+  "fieldname": "hr_and_payroll_tab",
+  "fieldtype": "Tab Break",
+  "label": "HR & Payroll",
+  "insert_after": "credit_limit"
+}
+```
+</Accordion>
+
+<Accordion title="Section and Column Breaks">
+These control the layout of forms:
+
+```json
+{
+  "fieldname": "hr_settings_section",
+  "fieldtype": "Section Break",
+  "label": "HR & Payroll Settings"
+}
+```
+</Accordion>
+
+<Accordion title="Table Fields">
+Table fields create child tables for one-to-many relationships:
+
+```json /home/daytona/workspace/source/euw/fixtures/custom_field.json:689-713
+{
+  "dt": "Department",
+  "fieldname": "shift_request_approver",
+  "fieldtype": "Table",
+  "label": "Shift Request Approver",
+  "options": "Department Approver"
+}
+```
+</Accordion>
+
+## Examples from EUW
+
+### Asset Custom Fields
+
+EUW adds a `branch` field to the Asset DocType to track asset locations:
+
+```json /home/daytona/workspace/source/euw/fixtures/custom_field.json:2-57
+{
+  "dt": "Asset",
+  "fieldname": "branch",
+  "fieldtype": "Link",
+  "options": "Branch",
+  "label": "Branch",
+  "insert_after": "dimension_col_break",
+  "translatable": 1
+}
+```
+
+### Company HR & Payroll Configuration
+
+The Company DocType is extended with HR and payroll-related fields:
+
+<CodeGroup>
+```json Tab Break
+{
+  "dt": "Company",
+  "fieldname": "hr_and_payroll_tab",
+  "fieldtype": "Tab Break",
+  "label": "HR & Payroll"
+}
+```
+
+```json Account Links
+{
+  "dt": "Company",
+  "fieldname": "default_expense_claim_payable_account",
+  "fieldtype": "Link",
+  "options": "Account",
+  "label": "Default Expense Claim Payable Account",
+  "depends_on": "eval:!doc.__islocal",
+  "ignore_user_permissions": 1
+}
+```
+</CodeGroup>
+
+### Employee Approver Configuration
+
+EUW adds approval hierarchies to the Employee DocType:
+
+```json /home/daytona/workspace/source/euw/fixtures/custom_field.json:1458-1513
+{
+  "dt": "Employee",
+  "fieldname": "expense_approver",
+  "fieldtype": "Link",
+  "options": "User",
+  "label": "Expense Approver",
+  "insert_after": "approvers_section"
+}
+```
+
+### Department Approvers
+
+Departments can have multiple types of approvers using Table fields:
+
+```json
+[
+  {
+    "fieldname": "shift_request_approver",
+    "fieldtype": "Table",
+    "options": "Department Approver"
+  },
+  {
+    "fieldname": "leave_approvers",
+    "fieldtype": "Table",
+    "options": "Department Approver"
+  },
+  {
+    "fieldname": "expense_approvers",
+    "fieldtype": "Table",
+    "options": "Department Approver"
+  }
+]
+```
+
+### Item Custom Fields
+
+EUW adds custom fields to Item for specific business needs:
+
+```json /home/daytona/workspace/source/euw/euw/custom/item.json:22-48
+{
+  "dt": "Item",
+  "fieldname": "custom_applicability",
+  "fieldtype": "Link",
+  "options": "Applicability",
+  "label": "Applicability",
+  "insert_after": "stock_uom"
+}
+```
+
+## Field Properties
+
+### Essential Properties
+
+- **dt**: The DocType being customized
+- **fieldname**: Unique identifier (must start with `custom_` for custom fields)
+- **fieldtype**: Data type (Link, Data, Text, Date, etc.)
+- **label**: Display name shown to users
+- **insert_after**: Position in the form layout
+
+### Optional Properties
+
+- **options**: For Link fields (target DocType) or Select fields (choices)
+- **depends_on**: JavaScript expression to show/hide field
+- **mandatory_depends_on**: Conditional requirement
+- **fetch_from**: Auto-populate from linked DocType
+- **read_only**: Make field non-editable
+- **hidden**: Hide field from view
+- **translatable**: Allow field translation
+
+## Best Practices
+
+<Note>
+**Naming Convention**: Always prefix custom field names with `custom_` to distinguish them from standard fields and avoid conflicts during upgrades.
+</Note>
+
+<Note>
+**Field Positioning**: Use `insert_after` to place fields logically within the form. Group related fields using Section Breaks.
+</Note>
+
+<Note>
+**Link Fields**: When using Link fields, ensure the target DocType exists and has appropriate permissions configured.
+</Note>
+
+## Creating Custom Fields
+
+### Using Bench Export
+
+To export custom fields for your app:
+
+```bash
+bench --site [site-name] export-fixtures
+```
+
+This exports all fixtures defined in `hooks.py` including custom fields.
+
+### Manual Definition
+
+You can also manually define custom fields in `fixtures/custom_field.json`:
+
+```json
+[
+  {
+    "dt": "Your DocType",
+    "fieldname": "custom_your_field",
+    "fieldtype": "Data",
+    "label": "Your Field Label",
+    "insert_after": "existing_field"
+  }
+]
+```
+
+## Importing Custom Fields
+
+Custom fields are automatically imported when:
+
+1. **Installing the app**:
+   ```bash
+   bench --site [site-name] install-app euw
+   ```
+
+2. **Migrating the site**:
+   ```bash
+   bench --site [site-name] migrate
+   ```
+
+3. **Manually importing fixtures**:
+   ```bash
+   bench --site [site-name] import-doc fixtures/custom_field.json
+   ```
+
+## Conditional Fields
+
+Use `depends_on` to show fields conditionally:
+
+```json /home/daytona/workspace/source/euw/fixtures/custom_field.json:1354-1400
+{
+  "dt": "Employee",
+  "fieldname": "health_insurance_no",
+  "fieldtype": "Data",
+  "label": "Health Insurance No",
+  "depends_on": "eval:doc.health_insurance_provider"
+}
+```
+
+This field only appears when `health_insurance_provider` has a value.
+
+## Field Fetching
+
+Auto-populate fields from linked documents:
+
+```json /home/daytona/workspace/source/euw/fixtures/custom_field.json:1751-1792
+{
+  "dt": "Employee",
+  "fieldname": "payroll_cost_center",
+  "fieldtype": "Link",
+  "options": "Cost Center",
+  "fetch_from": "department.payroll_cost_center",
+  "fetch_if_empty": 1
+}
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Fixtures Guide" icon="box" href="/guides/fixtures">
+    Learn about the fixtures system
+  </Card>
+  <Card title="Configuration Guide" icon="gear" href="/guides/configuration">
+    Configure EUW settings and hooks
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<Accordion title="Custom field not appearing">
+1. Check that the field is in `fixtures/custom_field.json`
+2. Verify fixtures are listed in `hooks.py`
+3. Run `bench migrate` to apply changes
+4. Clear cache with `bench clear-cache`
+</Accordion>
+
+<Accordion title="Field shows in wrong position">
+Check the `insert_after` value points to an existing field in the DocType.
+</Accordion>
+
+<Accordion title="Link field not working">
+Ensure:
+- The `options` value matches the target DocType exactly
+- The target DocType exists in the system
+- User has read permissions on the target DocType
+</Accordion>

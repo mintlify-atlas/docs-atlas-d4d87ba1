@@ -1,0 +1,257 @@
+---
+title: 'Issue Customizations'
+description: 'Custom fields and extensions for the Issue DocType'
+---
+
+## Overview
+
+The Issue DocType has been extended with custom fields to support aircraft maintenance tracking, work order management, and date tracking specific to EUW's aviation maintenance operations.
+
+**Extends**: `Issue` (ERPNext standard DocType)
+
+## Aircraft & Work Order Fields
+
+### A/C (Aircraft)
+
+<ParamField path="custom_ac" type="Data">
+  Aircraft registration or identification number.
+  
+  - **Insert After**: `custom_section_break_ssnx3`
+  - **Field Index**: 22
+</ParamField>
+
+### W/O # (Work Order Number)
+
+<ParamField path="custom_wo_number" type="Data">
+  Work order reference number for tracking maintenance activities.
+  
+  - **Insert After**: `custom_ac`
+  - **Field Index**: 23
+</ParamField>
+
+### ATA CH. (ATA Chapter)
+
+<ParamField path="custom_ata_ch" type="Data">
+  ATA (Air Transport Association) chapter reference for categorizing maintenance tasks according to aviation industry standards.
+  
+  - **Insert After**: `custom_wo_number`
+  - **Field Index**: 24
+</ParamField>
+
+## Date Tracking Fields
+
+### Issue Date
+
+<ParamField path="custom_issue_date" type="Date">
+  The date when the issue was identified or reported.
+  
+  - **Insert After**: `custom_column_break_oznlo`
+  - **Field Index**: 26
+</ParamField>
+
+### Due Date
+
+<ParamField path="custom_due_date" type="Date">
+  The target date by which the issue should be resolved.
+  
+  - **Insert After**: `custom_issue_date`
+  - **Field Index**: 27
+</ParamField>
+
+### Accomplished Date
+
+<ParamField path="custom_accomplished_date" type="Date">
+  The actual date when the issue was completed or resolved.
+  
+  - **Insert After**: `custom_due_date`
+  - **Field Index**: 28
+</ParamField>
+
+## Additional Fields
+
+### Expiry Date
+
+<ParamField path="custom_expiry_date" type="Date">
+  Expiration date for certifications, inspections, or other time-sensitive issue resolutions.
+  
+  - **Insert After**: `section_break_19`
+  - **Field Index**: 37
+</ParamField>
+
+### Sales Order
+
+<ParamField path="custom_sales_order" type="Link">
+  Links the issue to a specific Sales Order for billing and tracking purposes.
+  
+  - **Options**: `Sales Order`
+  - **Insert After**: `additional_info`
+  - **Field Index**: 46
+</ParamField>
+
+## Field Organization
+
+The custom fields are organized into a dedicated section:
+
+### Custom Section (`custom_section_break_ssnx3`)
+- **Position**: After `issue_split_from`
+- **Contains**: Aircraft information, Work Order details, and date tracking fields
+
+## Field Details Table
+
+| Field | Type | Purpose | Required | Index |
+|-------|------|---------|----------|-------|
+| `custom_ac` | Data | Aircraft identifier | No | 22 |
+| `custom_wo_number` | Data | Work order tracking | No | 23 |
+| `custom_ata_ch` | Data | ATA chapter reference | No | 24 |
+| `custom_issue_date` | Date | Issue identification date | No | 26 |
+| `custom_due_date` | Date | Target completion date | No | 27 |
+| `custom_accomplished_date` | Date | Actual completion date | No | 28 |
+| `custom_expiry_date` | Date | Expiration tracking | No | 37 |
+| `custom_sales_order` | Link | Sales order reference | No | 46 |
+
+## Usage Examples
+
+### Creating an Aircraft Maintenance Issue
+
+```python
+issue = frappe.get_doc({
+    'doctype': 'Issue',
+    'subject': 'Engine inspection required',
+    'customer': 'CUST-2024-001',
+    'priority': 'High',
+    'custom_ac': 'N12345',
+    'custom_wo_number': 'WO-2024-0123',
+    'custom_ata_ch': '71',  # ATA Chapter 71 - Power Plant
+    'custom_issue_date': '2024-03-01',
+    'custom_due_date': '2024-03-15',
+    'description': 'Scheduled engine inspection per maintenance manual'
+})
+issue.insert()
+```
+
+### Completing an Issue
+
+```python
+from datetime import date
+
+issue = frappe.get_doc('Issue', 'ISS-2024-00123')
+issue.custom_accomplished_date = date.today()
+issue.status = 'Closed'
+issue.save()
+```
+
+### Finding Overdue Issues
+
+```python
+from datetime import date
+
+overdue_issues = frappe.get_all('Issue',
+    filters={
+        'status': ['!=', 'Closed'],
+        'custom_due_date': ['<', date.today()]
+    },
+    fields=['name', 'subject', 'custom_ac', 'custom_wo_number', 'custom_due_date']
+)
+```
+
+### Issues by ATA Chapter
+
+```python
+ata_chapter_issues = frappe.get_all('Issue',
+    filters={
+        'custom_ata_ch': '24',  # ATA Chapter 24 - Electrical Power
+        'status': ['!=', 'Closed']
+    },
+    fields=['name', 'subject', 'custom_ac', 'priority', 'custom_issue_date']
+)
+```
+
+### Issues for Specific Aircraft
+
+```python
+aircraft_issues = frappe.get_all('Issue',
+    filters={
+        'custom_ac': 'N12345'
+    },
+    fields=['name', 'subject', 'custom_wo_number', 'custom_ata_ch', 'status', 'custom_issue_date'],
+    order_by='custom_issue_date desc'
+)
+```
+
+## ATA Chapter Reference
+
+<Info>
+The `custom_ata_ch` field uses the ATA 100 standard chapter system for aircraft maintenance:
+
+- **21-29**: Airframe Systems
+- **30-49**: Structure
+- **50-57**: Doors, Windows, etc.
+- **70-80**: Power Plant
+- **91-97**: Charts and Wiring
+
+For a complete list, refer to the ATA iSpec 2200 standard.
+</Info>
+
+## Service Level Agreement Integration
+
+<Note>
+The Issue DocType has been configured with Service Level Agreement support:
+
+- **Fetch Customer From**: `service_level_agreement.entity`
+- **Link Filters**: `[["Service Level Agreement","entity_type","=","Customer"]]`
+- **Service Level Section**: Not collapsible
+</Note>
+
+## Date Field Logic
+
+### Issue Date vs Opening Date
+
+The Issue DocType has both standard and custom date fields:
+
+- **Opening Date** (standard): System-generated timestamp when issue is created
+- **Issue Date** (custom): Business date when the issue was actually identified
+
+### Completion Tracking
+
+```python
+# Calculate time to complete
+issue = frappe.get_doc('Issue', issue_name)
+
+if issue.custom_issue_date and issue.custom_accomplished_date:
+    from datetime import datetime
+    
+    issue_date = datetime.strptime(str(issue.custom_issue_date), '%Y-%m-%d')
+    accomplished_date = datetime.strptime(str(issue.custom_accomplished_date), '%Y-%m-%d')
+    
+    days_to_complete = (accomplished_date - issue_date).days
+    print(f"Issue completed in {days_to_complete} days")
+```
+
+## Best Practices
+
+1. **Always Specify Aircraft**: For aviation maintenance issues, always populate the `custom_ac` field
+2. **Link Work Orders**: Connect issues to work orders using `custom_wo_number` for complete tracking
+3. **Use ATA Chapters**: Categorize maintenance issues with appropriate ATA chapter codes
+4. **Set Realistic Due Dates**: Consider maintenance complexity and parts availability when setting `custom_due_date`
+5. **Record Completion**: Always update `custom_accomplished_date` when closing issues
+
+## Reporting
+
+### Work Order Status Report
+
+```python
+@frappe.whitelist()
+def get_work_order_status(work_order_number):
+    issues = frappe.get_all('Issue',
+        filters={'custom_wo_number': work_order_number},
+        fields=['name', 'subject', 'status', 'custom_ata_ch', 
+                'custom_issue_date', 'custom_due_date', 'custom_accomplished_date']
+    )
+    
+    return {
+        'work_order': work_order_number,
+        'total_issues': len(issues),
+        'open_issues': len([i for i in issues if i.status != 'Closed']),
+        'issues': issues
+    }
+```

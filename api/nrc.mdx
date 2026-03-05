@@ -1,0 +1,437 @@
+---
+title: NRC
+description: API reference for the NRC (Non-Routine Card) DocType in EUW Frappe framework
+---
+
+## Overview
+
+The **NRC** (Non-Routine Card) DocType is used to document and track non-routine work requests in aircraft maintenance operations. It captures work request descriptions, ATA chapter references, corrective actions, and maintains a complete audit trail with amendment support.
+
+### Key Features
+
+- **Submittable**: Documents can be submitted for approval workflow
+- **Amendable**: Submitted documents can be amended with full traceability
+- **Auto-numbering**: Uses naming series for automatic document naming
+- **ATA Chapter Tracking**: References Air Transport Association chapter codes
+- **Corrective Action Documentation**: Tracks actions taken to resolve issues
+- **Search Indexing**: Amendment history is indexed for fast searching
+
+## DocType Configuration
+
+**Module**: EUW  
+**Engine**: InnoDB  
+**Naming Rule**: By "Naming Series" field  
+**Allow Rename**: Yes  
+**Submittable**: Yes  
+**Editable Grid**: Yes  
+**Default View**: List
+
+## Fields
+
+<ParamField path="naming_series" type="Select" required>
+  The naming series for auto-generating document names.
+  
+  - **Options**: `NRC-.YYYY.-####`
+  - **Label**: Series
+  - **Example**: NRC-2024-0001
+</ParamField>
+
+<ParamField path="description" type="Data" required>
+  A detailed description of the non-routine work request.
+  
+  - **Required**: Yes
+  - **Label**: Work Request Description
+</ParamField>
+
+<ParamField path="open_date" type="Date" required>
+  The date when the non-routine work request was opened.
+  
+  - **Required**: Yes
+  - **In List View**: Yes
+  - **Label**: OPEN DATE
+</ParamField>
+
+<ParamField path="ata_ch" type="Data">
+  The ATA (Air Transport Association) chapter code that categorizes this work request.
+  
+  - **Label**: ATA CH
+  - **Example**: 32 (Landing Gear), 79 (Oil), etc.
+</ParamField>
+
+<ParamField path="corrective_action" type="Data">
+  Description of the corrective action taken to address the work request.
+  
+  - **Label**: Corrective Action
+</ParamField>
+
+<ParamField path="amended_from" type="Link">
+  Reference to the original NRC document if this is an amendment.
+  
+  - **Options**: NRC
+  - **Read Only**: Yes
+  - **No Copy**: Yes
+  - **Print Hide**: Yes
+  - **Search Index**: Yes
+  - **Label**: Amended From
+</ParamField>
+
+## Permissions
+
+The NRC DocType has the following permissions configured for the **System Manager** role:
+
+| Permission | Enabled |
+|------------|--------|
+| Create     | ✓      |
+| Read       | ✓      |
+| Write      | ✓      |
+| Delete     | ✓      |
+| Export     | ✓      |
+| Print      | ✓      |
+| Email      | ✓      |
+| Report     | ✓      |
+| Share      | ✓      |
+
+## Python API
+
+### Class Definition
+
+```python
+from frappe.model.document import Document
+
+class NRC(Document):
+    pass
+```
+
+The NRC class inherits from Frappe's base `Document` class and uses the default behavior without custom methods.
+
+### Creating a New NRC
+
+```python
+import frappe
+from datetime import datetime
+
+# Create a new NRC document
+nrc = frappe.get_doc({
+    "doctype": "NRC",
+    "naming_series": "NRC-.YYYY.-####",
+    "description": "Landing gear strut seal leaking hydraulic fluid",
+    "open_date": datetime.now().date(),
+    "ata_ch": "32",
+    "corrective_action": "Replaced seal P/N 123-456-789, leak check satisfactory"
+})
+nrc.insert()
+frappe.db.commit()
+
+print(f"Created NRC: {nrc.name}")
+```
+
+### Submitting an NRC
+
+```python
+import frappe
+
+# Load the document
+nrc = frappe.get_doc("NRC", "NRC-2024-0001")
+
+# Submit the document
+nrc.submit()
+frappe.db.commit()
+
+print(f"Submitted NRC: {nrc.name}")
+```
+
+### Amending a Submitted NRC
+
+```python
+import frappe
+
+# Create an amended version of a submitted document
+original_nrc = frappe.get_doc("NRC", "NRC-2024-0001")
+
+# Amend creates a copy
+amended_nrc = frappe.copy_doc(original_nrc)
+amended_nrc.amended_from = original_nrc.name
+amended_nrc.docstatus = 0  # Draft status
+
+# Make changes
+amended_nrc.corrective_action = "Additional inspection performed, no further defects found"
+
+# Save and submit
+amended_nrc.save()
+amended_nrc.submit()
+frappe.db.commit()
+
+print(f"Amendment submitted: {amended_nrc.name}")
+```
+
+### Retrieving an NRC
+
+```python
+import frappe
+
+# Get an existing NRC by name
+nrc = frappe.get_doc("NRC", "NRC-2024-0001")
+
+# Access fields
+print(f"Description: {nrc.description}")
+print(f"Open Date: {nrc.open_date}")
+print(f"ATA Chapter: {nrc.ata_ch}")
+print(f"Corrective Action: {nrc.corrective_action}")
+
+# Check if this is an amendment
+if nrc.amended_from:
+    print(f"This is an amendment of: {nrc.amended_from}")
+```
+
+### Querying NRC Documents
+
+```python
+import frappe
+
+# Get all submitted NRC documents
+submitted_nrcs = frappe.get_all(
+    "NRC",
+    filters={"docstatus": 1},
+    fields=["name", "description", "open_date", "ata_ch"],
+    order_by="open_date desc"
+)
+
+# Get NRCs for a specific ATA chapter
+ata_32_nrcs = frappe.get_all(
+    "NRC",
+    filters={"ata_ch": "32"},
+    fields=["name", "description", "corrective_action"]
+)
+
+# Get NRCs opened in a date range
+from datetime import datetime, timedelta
+
+start_date = datetime.now() - timedelta(days=30)
+recent_nrcs = frappe.get_all(
+    "NRC",
+    filters={
+        "open_date": [">=", start_date.date()]
+    },
+    fields=["name", "description", "open_date"]
+)
+
+# Get amendment history for an NRC
+amendments = frappe.get_all(
+    "NRC",
+    filters={"amended_from": "NRC-2024-0001"},
+    fields=["name", "modified", "corrective_action"],
+    order_by="modified asc"
+)
+```
+
+### Canceling an NRC
+
+```python
+import frappe
+
+# Cancel a submitted document
+nrc = frappe.get_doc("NRC", "NRC-2024-0001")
+nrc.cancel()
+frappe.db.commit()
+```
+
+## REST API
+
+### Get Document
+
+```bash
+GET /api/resource/NRC/{name}
+```
+
+**Example:**
+```bash
+curl -X GET \
+  https://your-site.com/api/resource/NRC/NRC-2024-0001 \
+  -H 'Authorization: token api_key:api_secret'
+```
+
+### Create Document
+
+```bash
+POST /api/resource/NRC
+```
+
+**Example:**
+```bash
+curl -X POST \
+  https://your-site.com/api/resource/NRC \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "naming_series": "NRC-.YYYY.-####",
+    "description": "Engine oil pressure fluctuation",
+    "open_date": "2024-09-22",
+    "ata_ch": "79",
+    "corrective_action": "Replaced oil pressure sensor, tested normal"
+  }'
+```
+
+### Update Document
+
+```bash
+PUT /api/resource/NRC/{name}
+```
+
+**Example:**
+```bash
+curl -X PUT \
+  https://your-site.com/api/resource/NRC/NRC-2024-0001 \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "corrective_action": "Updated: Replaced sensor and recalibrated system"
+  }'
+```
+
+### Submit Document
+
+```bash
+PUT /api/resource/NRC/{name}
+```
+
+**Example:**
+```bash
+curl -X PUT \
+  https://your-site.com/api/resource/NRC/NRC-2024-0001 \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "docstatus": 1
+  }'
+```
+
+### Cancel Document
+
+```bash
+PUT /api/resource/NRC/{name}
+```
+
+**Example:**
+```bash
+curl -X PUT \
+  https://your-site.com/api/resource/NRC/NRC-2024-0001 \
+  -H 'Authorization: token api_key:api_secret' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "docstatus": 2
+  }'
+```
+
+## Document Status
+
+Since NRC is a submittable DocType, documents have the following statuses:
+
+- **Draft** (`docstatus = 0`): Document is in draft state and can be edited
+- **Submitted** (`docstatus = 1`): Document is submitted and locked from editing
+- **Cancelled** (`docstatus = 2`): Document is cancelled
+
+## ATA Chapter Reference
+
+Common ATA chapters used in aircraft maintenance:
+
+| ATA | Description |
+|-----|-------------|
+| 21  | Air Conditioning |
+| 24  | Electrical Power |
+| 27  | Flight Controls |
+| 28  | Fuel |
+| 29  | Hydraulic Power |
+| 32  | Landing Gear |
+| 34  | Navigation |
+| 36  | Pneumatic |
+| 49  | Auxiliary Power Unit (APU) |
+| 52  | Doors |
+| 71  | Power Plant |
+| 79  | Oil |
+
+## Workflow Example
+
+```python
+import frappe
+from datetime import datetime
+
+# 1. Create a draft NRC for a reported issue
+nrc = frappe.get_doc({
+    "doctype": "NRC",
+    "naming_series": "NRC-.YYYY.-####",
+    "description": "Unusual noise from APU during startup",
+    "open_date": datetime.now().date(),
+    "ata_ch": "49"
+})
+nrc.insert()
+print(f"Draft NRC created: {nrc.name}")
+
+# 2. Maintenance performs investigation and updates corrective action
+nrc.corrective_action = "Inspected APU, found loose mounting bracket. Torqued to spec."
+nrc.save()
+
+# 3. Review and submit
+nrc.submit()
+print(f"NRC submitted: {nrc.name}")
+
+# 4. Later, additional work is needed - create amendment
+amended = frappe.copy_doc(nrc)
+amended.amended_from = nrc.name
+amended.docstatus = 0
+amended.corrective_action += " Follow-up inspection performed after 5 flight hours, no further issues."
+amended.save()
+amended.submit()
+print(f"Amendment submitted: {amended.name}")
+
+frappe.db.commit()
+```
+
+## Reporting Examples
+
+### NRCs by ATA Chapter
+
+```python
+import frappe
+
+# Get count of NRCs grouped by ATA chapter
+result = frappe.db.sql("""
+    SELECT 
+        ata_ch,
+        COUNT(*) as count
+    FROM `tabNRC`
+    WHERE docstatus = 1
+    GROUP BY ata_ch
+    ORDER BY count DESC
+""", as_dict=True)
+
+for row in result:
+    print(f"ATA {row.ata_ch}: {row.count} NRCs")
+```
+
+### NRCs Without Corrective Action
+
+```python
+import frappe
+
+# Find submitted NRCs that don't have corrective action documented
+incomplete_nrcs = frappe.get_all(
+    "NRC",
+    filters={
+        "docstatus": 1,
+        "corrective_action": ["", None]
+    },
+    fields=["name", "description", "open_date"],
+    order_by="open_date asc"
+)
+
+print(f"Found {len(incomplete_nrcs)} NRCs without corrective action")
+```
+
+## Notes
+
+- NRC documents follow the naming series pattern: `NRC-YYYY-####` (e.g., NRC-2024-0001)
+- Once submitted, documents cannot be edited directly - they must be amended
+- The `amended_from` field is indexed for fast lookup of amendment history
+- ATA chapter codes help categorize work by aircraft system
+- Corrective action documentation is essential for regulatory compliance and maintenance records
+- Amendment history creates a complete audit trail for all changes to non-routine work

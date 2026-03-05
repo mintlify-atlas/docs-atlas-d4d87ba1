@@ -1,0 +1,198 @@
+---
+title: Architecture
+description: Understanding EUW's role in the Frappe ecosystem and its module structure
+---
+
+## Overview
+
+EUW is a Frappe framework application designed to extend ERPNext with specialized functionality for work order management. The app integrates seamlessly with the Frappe/ERPNext ecosystem while maintaining a modular, maintainable architecture.
+
+## Role in the Frappe Ecosystem
+
+EUW operates as a custom Frappe app that:
+
+- **Extends ERPNext**: Built on top of ERPNext's core functionality, inheriting its document management, workflow, and permission systems
+- **Adds Domain-Specific DocTypes**: Introduces specialized document types for work order scenarios (DDS, NRC, Applicability)
+- **Customizes Standard DocTypes**: Enhances existing ERPNext documents like Item, Asset, Employee, and Company with additional fields
+- **Maintains Compatibility**: Uses Frappe's hooks system to integrate without modifying core files
+
+<Note>
+EUW follows Frappe best practices by using fixtures for customizations, ensuring all changes are version-controlled and reproducible across environments.
+</Note>
+
+## Application Metadata
+
+From the hooks configuration:
+
+```python hooks.py
+app_name = "euw"
+app_title = "EUW"
+app_publisher = "Aseel Gh"
+app_description = "EUW app for Workorder"
+app_license = "MIT"
+```
+
+<Info>
+**Version**: 0.0.1  
+**License**: MIT  
+**Purpose**: Work order management extensions for ERPNext
+</Info>
+
+## Module Structure
+
+The EUW application follows Frappe's standard directory structure:
+
+```
+euw/
+├── euw/                      # Main Python module
+│   ├── doctype/             # Custom DocTypes
+│   │   ├── applicability/   # Applicability DocType
+│   │   ├── dds/            # DDS (Deferred Defect Sheet) DocType
+│   │   └── nrc/            # NRC (Non-Routine Card) DocType
+│   └── custom/             # Custom field definitions
+│       ├── asset.json
+│       ├── customer.json
+│       ├── issue.json
+│       ├── item.json
+│       └── ...
+├── fixtures/               # Fixture data for import/export
+│   ├── custom_field.json
+│   ├── property_setter.json
+│   ├── client_script.json
+│   ├── print_format.json
+│   └── translation.json
+├── config/                 # App configuration
+├── templates/             # Jinja templates
+└── hooks.py              # Frappe hooks configuration
+```
+
+## Integration Points
+
+### Fixtures System
+
+EUW uses Frappe's fixtures system to manage customizations:
+
+```python hooks.py
+fixtures = [
+    'Client Script',
+    'Custom Field',
+    'Property Setter',
+    'Print Format',
+    'Translation'
+]
+```
+
+This ensures all customizations are:
+- Version controlled
+- Reproducible across environments
+- Exportable and importable
+- Tracked in the codebase
+
+### Custom DocTypes
+
+Three primary custom DocTypes extend ERPNext's document model:
+
+<CardGroup cols={3}>
+  <Card title="Applicability" icon="tag">
+    Simple master data for categorization
+  </Card>
+  <Card title="DDS" icon="file-exclamation">
+    Deferred Defect Sheets with issue tracking
+  </Card>
+  <Card title="NRC" icon="wrench">
+    Non-Routine Cards for work requests
+  </Card>
+</CardGroup>
+
+### Standard DocType Extensions
+
+EUW extends multiple ERPNext DocTypes with custom fields:
+
+- **Item**: Adds applicability linking
+- **Asset**: Adds branch field
+- **Employee**: Adds HR-specific fields (employment type, grade, approvers)
+- **Company**: Adds HR & Payroll settings
+- **Department**: Adds approver workflows
+- **Project/Task**: Adds expense tracking fields
+
+## Hook Configuration
+
+While the hooks.py file contains many commented placeholders, EUW currently uses:
+
+### Active Hooks
+
+```python
+# Fixtures for data export/import
+fixtures = ['Client Script', 'Custom Field', 'Property Setter', 'Print Format', 'Translation']
+```
+
+### Available Hook Points (Currently Unused)
+
+EUW's architecture allows for future expansion through:
+
+- **Document Events**: Hook into document lifecycle (on_update, on_cancel, etc.)
+- **Scheduled Tasks**: Background jobs for automation
+- **Permission Queries**: Custom permission logic
+- **Overriding Methods**: Customize existing Frappe/ERPNext behavior
+- **DocType Dashboards**: Custom dashboard data
+
+<Accordion title="Example: Adding Document Events">
+```python hooks.py
+doc_events = {
+    "Item": {
+        "on_update": "euw.euw.custom.item.validate_applicability",
+    },
+    "Work Order": {
+        "on_submit": "euw.euw.custom.work_order.create_linked_records",
+    }
+}
+```
+</Accordion>
+
+## Design Principles
+
+### Non-Invasive Customization
+
+EUW follows Frappe best practices:
+- Never modifies core files
+- Uses Custom Fields instead of patching DocTypes
+- Leverages hooks for extensions
+- Maintains upgrade compatibility
+
+### Separation of Concerns
+
+- **DocTypes**: Core business logic in `euw/euw/doctype/`
+- **Customizations**: Field additions in `euw/euw/custom/` and `fixtures/`
+- **Configuration**: App settings in `hooks.py`
+- **Templates**: UI customizations in `templates/`
+
+### Data-Driven Configuration
+
+Customizations are defined as JSON fixtures, making them:
+- Easy to review in version control
+- Portable across instances
+- Auditable and traceable
+
+## Deployment Architecture
+
+EUW deploys as a standard Frappe app:
+
+1. **Installation**: `bench get-app` to download
+2. **Site Installation**: `bench --site [sitename] install-app euw`
+3. **Migration**: Frappe automatically creates DocTypes and applies fixtures
+4. **Updates**: Standard bench update process
+
+<Warning>
+Always test customizations in a development environment before deploying to production.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="DocTypes" icon="database" href="/concepts/doctypes">
+    Explore the three custom DocTypes
+  </Card>
+  <Card title="Customizations" icon="sliders" href="/concepts/customizations">
+    Learn about custom fields and fixtures
+  </Card>
+</CardGroup>
